@@ -9,7 +9,7 @@ const JENIS_BURUNG_OPTIONS = [
   'Trucukan', 'Prenjak', 'Tledekan', 'Jalak Suren', 'Jalak Bali',
 ]
 
-export default function AddEventModal() {
+export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => void }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -59,7 +59,7 @@ export default function AddEventModal() {
         setSuccess(false)
         setSelectedBurung([])
         formRef.current?.reset()
-        window.location.reload()
+        onEventAdded?.()
       }, 1200)
     }
   }
