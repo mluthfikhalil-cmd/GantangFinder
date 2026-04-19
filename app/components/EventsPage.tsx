@@ -1,10 +1,18 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import EventCard from './EventCard'
 import AddEventModal from './AddEventModal'
 import WatchlistModal, { Watchlist } from './WatchlistModal'
 import { Event, getDaysUntil } from './types'
+
+const supabase = (() => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
+  return url && key ? createClient(url, key) : null
+})()
+
 
 const LEVELS = ['Latber', 'Latpres', 'Regional', 'Nasional']
 const BIRDS = ['Murai Batu','Kacer','Cucak Rowo','Cendet','Kenari','Lovebird','Cucak Hijau','Anis Merah','Pleci','Kolibri','Trucukan','Prenjak','Tledekan','Jalak Suren','Jalak Bali']
@@ -65,12 +73,8 @@ export default function EventsPage() {
   const fetchEvents = useCallback(async () => {
     setLoading(true)
     try {
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-      if (!url || !key) { setLoading(false); return }
-      const { createClient } = await import('@supabase/supabase-js')
-      const sb = createClient(url, key)
-      const { data } = await sb.from('events').select('*').order('is_featured', { ascending: false }).order('tanggal', { ascending: true })
+      if (!supabase) { setLoading(false); return }
+      const { data } = await supabase.from('events').select('*').order('is_featured', { ascending: false }).order('tanggal', { ascending: true })
       const evs = data ?? []
       setEvents(evs)
       // Check reminders & watchlist

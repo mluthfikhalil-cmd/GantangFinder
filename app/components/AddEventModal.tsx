@@ -1,6 +1,14 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = (() => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
+  return url && key ? createClient(url, key) : null
+})()
+
 
 const JENIS_BURUNG_OPTIONS = [
   'Murai Batu', 'Kacer', 'Cucak Rowo', 'Cendet', 'Kenari',
@@ -58,15 +66,10 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
     setError('')
 
     try {
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-      if (!url || !key) throw new Error('Konfigurasi database tidak ditemukan.')
+      if (!supabase) throw new Error('Konfigurasi database tidak ditemukan.')
 
       const form = e.currentTarget
       const get = (name: string) => (form.elements.namedItem(name) as HTMLInputElement)?.value || ''
-
-      const { createClient } = await import('@supabase/supabase-js')
-      const supabase = createClient(url, key)
 
       const { error: sbError } = await supabase.from('events').insert({
         nama_event: get('nama_event'),
