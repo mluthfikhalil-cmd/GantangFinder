@@ -46,7 +46,7 @@ export async function addEvent(formData: FormData) {
 
     revalidatePath('/')
     return { success: true }
-  } catch (e: any) {
-    return { error: e?.message ?? 'Terjadi kesalahan.' }
+  } catch (e: unknown) {
+    return { error: e instanceof Error ? e.message : 'Terjadi kesalahan.' }
   }
 }

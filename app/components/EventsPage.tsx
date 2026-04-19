@@ -78,7 +78,8 @@ export default function EventsPage() {
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { fetchEvents() }, [fetchEvents])
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+  useEffect(() => { void fetchEvents() }, [])
 
   async function useMyLocation() {
     setLocLoading(true)

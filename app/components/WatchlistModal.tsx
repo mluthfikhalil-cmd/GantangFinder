@@ -1,22 +1,28 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { BIRDS } from './types'
 
 export interface Watchlist { cities: string[]; birds: string[] }
 
 export default function WatchlistModal({ cities, onSave, watchlist }: { cities: string[]; onSave: (w: Watchlist) => void; watchlist: Watchlist }) {
   const [open, setOpen] = useState(false)
-  const [selCities, setSelCities] = useState<string[]>([])
-  const [selBirds, setSelBirds] = useState<string[]>([])
-
-  useEffect(() => {
+  const [selCities, setSelCities] = useState<string[]>(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('gf_watchlist') || '{}')
-      setSelCities(saved.cities || [])
-      setSelBirds(saved.birds || [])
-    } catch {}
-  }, [open])
+      return saved.cities || []
+    } catch {
+      return []
+    }
+  })
+  const [selBirds, setSelBirds] = useState<string[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('gf_watchlist') || '{}')
+      return saved.birds || []
+    } catch {
+      return []
+    }
+  })
 
   function toggle<T>(arr: T[], val: T): T[] {
     return arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]

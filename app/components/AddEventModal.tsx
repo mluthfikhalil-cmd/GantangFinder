@@ -89,8 +89,8 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
         formRef.current?.reset()
         onEventAdded?.()
       }, 1200)
-    } catch (err: any) {
-      setError(err?.message ?? 'Terjadi kesalahan.')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Terjadi kesalahan.')
     } finally {
       setLoading(false)
     }

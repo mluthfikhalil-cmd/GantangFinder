@@ -23,7 +23,7 @@ export default function SkeletonCard({ featured = false }: { featured?: boolean 
     marginBottom: 8,
   })
 
-  const tagRow = (count = 3): React.CSSProperties => ({
+  const tagRow = (): React.CSSProperties => ({
     display: 'flex',
     gap: 6,
     marginTop: 10,
