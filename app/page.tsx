@@ -1,8 +1,9 @@
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
+  const supabase = getSupabase()
   const { data: events } = await supabase
     .from('events')
     .select('*')
