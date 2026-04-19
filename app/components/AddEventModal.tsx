@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { LEVELS, BIRDS } from './types'
 
 const supabase = (() => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
@@ -10,19 +11,18 @@ const supabase = (() => {
 })()
 
 
-const JENIS_BURUNG_OPTIONS = [
-  'Murai Batu', 'Kacer', 'Cucak Rowo', 'Cendet', 'Kenari',
-  'Lovebird', 'Cucak Hijau', 'Anis Merah', 'Pleci', 'Kolibri',
-  'Trucukan', 'Prenjak', 'Tledekan', 'Jalak Suren', 'Jalak Bali',
-]
-
-const LEVEL_OPTIONS = ['Latber', 'Latpres', 'Regional', 'Nasional']
-
 const SANGKAR_OPTIONS = [
   'Bebas',
   'Standar Panitia',
   'Wajib Merek Tertentu',
 ]
+
+const LEVEL_COLORS: Record<string, { bg: string; border: string; color: string }> = {
+  'Latber':   { bg: '#f0fdf4', border: '#86efac', color: '#15803d' },
+  'Latpres':  { bg: '#eff6ff', border: '#93c5fd', color: '#1d4ed8' },
+  'Regional': { bg: '#fef3c7', border: '#fcd34d', color: '#b45309' },
+  'Nasional': { bg: '#fdf4ff', border: '#e879f9', color: '#a21caf' },
+}
 
 const labelStyle: React.CSSProperties = {
   display: 'block', fontSize: '13px', fontWeight: 600,
@@ -42,6 +42,7 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [selectedBurung, setSelectedBurung] = useState<string[]>([])
+  const [selectedLevel, setSelectedLevel] = useState('')
   const [isFeatured, setIsFeatured] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
 
@@ -90,6 +91,7 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
         setOpen(false)
         setSuccess(false)
         setSelectedBurung([])
+        setSelectedLevel('')
         setIsFeatured(false)
         formRef.current?.reset()
         onEventAdded?.()
@@ -172,34 +174,29 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
               <div>
                 <label style={labelStyle}>Level Event</label>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {LEVEL_OPTIONS.map(level => {
-                    const colors: Record<string, { bg: string; border: string; color: string }> = {
-                      'Latber': { bg: '#f0fdf4', border: '#86efac', color: '#15803d' },
-                      'Latpres': { bg: '#eff6ff', border: '#93c5fd', color: '#1d4ed8' },
-                      'Regional': { bg: '#fef3c7', border: '#fcd34d', color: '#b45309' },
-                      'Nasional': { bg: '#fdf4ff', border: '#e879f9', color: '#a21caf' },
-                    }
+                  {LEVELS.map(level => {
+                    const active = selectedLevel === level
+                    const colors = LEVEL_COLORS[level]
                     return (
                       <label key={level} style={{ cursor: 'pointer' }}>
-                        <input type="radio" name="level_event" value={level} style={{ display: 'none' }}
-                          onChange={() => {
-                            document.querySelectorAll('[data-level]').forEach((el: any) => {
-                              el.style.background = '#f8fafc'
-                              el.style.border = '1.5px solid #e2e8f0'
-                              el.style.color = '#64748b'
-                            })
-                            const target = document.querySelector(`[data-level="${level}"]`) as HTMLElement
-                            if (target) {
-                              target.style.background = colors[level].bg
-                              target.style.border = `1.5px solid ${colors[level].border}`
-                              target.style.color = colors[level].color
-                            }
-                          }}
+                        <input
+                          type="radio"
+                          name="level_event"
+                          value={level}
+                          checked={selectedLevel === level}
+                          onChange={() => setSelectedLevel(level)}
+                          style={{ display: 'none' }}
                         />
-                        <span data-level={level} style={{
-                          padding: '6px 14px', borderRadius: 9999, fontSize: 13, fontWeight: 600,
-                          border: '1.5px solid #e2e8f0', background: '#f8fafc', color: '#64748b',
-                          transition: 'all 0.15s', display: 'inline-block',
+                        <span style={{
+                          padding: '6px 14px',
+                          borderRadius: 9999,
+                          fontSize: 13,
+                          fontWeight: 600,
+                          border: `1.5px solid ${active ? colors.border : '#e2e8f0'}`,
+                          background: active ? colors.bg : '#f8fafc',
+                          color: active ? colors.color : '#64748b',
+                          transition: 'all 0.15s',
+                          display: 'inline-block',
                         }}>{level}</span>
                       </label>
                     )
@@ -238,7 +235,7 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
               <div>
                 <label style={labelStyle}>Kelas / Jenis Burung</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: 12, background: '#f8fafc', borderRadius: 10, border: '1.5px solid #e2e8f0' }}>
-                  {JENIS_BURUNG_OPTIONS.map(b => (
+                  {BIRDS.map(b => (
                     <button key={b} type="button" onClick={() => toggleBurung(b)}
                       style={{
                         padding: '5px 12px', borderRadius: 9999, fontSize: 12, fontWeight: 600,

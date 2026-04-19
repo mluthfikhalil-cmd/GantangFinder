@@ -5,17 +5,14 @@ import { createClient } from '@supabase/supabase-js'
 import EventCard from './EventCard'
 import AddEventModal from './AddEventModal'
 import WatchlistModal, { Watchlist } from './WatchlistModal'
-import { Event, getDaysUntil } from './types'
+import { Event, getDaysUntil, LEVELS, BIRDS } from './types'
+import SkeletonCard from './SkeletonCard'
 
 const supabase = (() => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
   return url && key ? createClient(url, key) : null
 })()
-
-
-const LEVELS = ['Latber', 'Latpres', 'Regional', 'Nasional']
-const BIRDS = ['Murai Batu','Kacer','Cucak Rowo','Cendet','Kenari','Lovebird','Cucak Hijau','Anis Merah','Pleci','Kolibri','Trucukan','Prenjak','Tledekan','Jalak Suren','Jalak Bali']
 
 async function getReverseGeoCity(lat: number, lon: number): Promise<string> {
   const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
@@ -64,6 +61,7 @@ function checkWatchlistNotifications(events: Event[], watchlist: Watchlist) {
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
+  const [filterSearch, setFilterSearch] = useState('')
   const [filterBird, setFilterBird] = useState('')
   const [filterLevel, setFilterLevel] = useState('')
   const [filterKota, setFilterKota] = useState('')
@@ -104,15 +102,16 @@ export default function EventsPage() {
 
   // Filter logic
   const filtered = events.filter(ev => {
+    const searchOk = !filterSearch || ev.nama_event.toLowerCase().includes(filterSearch.toLowerCase())
     const birdOk = !filterBird || ev.jenis_burung?.includes(filterBird)
     const levelOk = !filterLevel || ev.level_event === filterLevel
     const kotaOk = !filterKota || ev.kota.toLowerCase().includes(filterKota.toLowerCase())
-    return birdOk && levelOk && kotaOk
+    return searchOk && birdOk && levelOk && kotaOk
   })
 
   const featured = filtered.filter(e => e.is_featured)
   const regular = filtered.filter(e => !e.is_featured)
-  const hasFilter = filterBird || filterLevel || filterKota
+  const hasFilter = filterSearch || filterBird || filterLevel || filterKota
 
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg)', paddingBottom:100 }}>
@@ -145,6 +144,17 @@ export default function EventsPage() {
       {/* Filter Bar */}
       <div style={{ background:'#fff', borderBottom:'1px solid #f1f5f9', padding:'12px 16px', position:'sticky', top:0, zIndex:30, boxShadow:'0 2px 8px rgba(0,0,0,.06)' }}>
         <div style={{ maxWidth:640, margin:'0 auto', display:'flex', flexDirection:'column', gap:10 }}>
+          {/* Search bar */}
+          <div style={{ position:'relative' }}>
+            <svg style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+              value={filterSearch}
+              onChange={e => setFilterSearch(e.target.value)}
+              placeholder="Cari nama event..."
+              style={{ width:'100%', padding:'9px 12px 9px 32px', border:'1.5px solid #e2e8f0', borderRadius:10, fontSize:13, fontFamily:'inherit', outline:'none', color:'#0f172a' }}
+            />
+          </div>
+
           {/* Kota search + lokasi btn */}
           <div style={{ display:'flex', gap:8 }}>
             <div style={{ flex:1, position:'relative' }}>
@@ -166,7 +176,7 @@ export default function EventsPage() {
               {locLoading ? '⏳' : '📍'}
             </button>
             {hasFilter && (
-              <button onClick={() => { setFilterBird(''); setFilterLevel(''); setFilterKota('') }} style={{ padding:'9px 14px', borderRadius:10, border:'1.5px solid #fca5a5', background:'#fef2f2', color:'#dc2626', cursor:'pointer', fontSize:12, fontWeight:600, fontFamily:'inherit', flexShrink:0 }}>
+              <button onClick={() => { setFilterSearch(''); setFilterBird(''); setFilterLevel(''); setFilterKota('') }} style={{ padding:'9px 14px', borderRadius:10, border:'1.5px solid #fca5a5', background:'#fef2f2', color:'#dc2626', cursor:'pointer', fontSize:12, fontWeight:600, fontFamily:'inherit', flexShrink:0 }}>
                 Reset
               </button>
             )}
@@ -198,9 +208,10 @@ export default function EventsPage() {
       {/* Content */}
       <main style={{ maxWidth:640, margin:'0 auto', padding:'16px 16px' }}>
         {loading ? (
-          <div style={{ textAlign:'center', padding:'60px 20px' }}>
-            <div style={{ fontSize:40, marginBottom:12 }}>🐦</div>
-            <p style={{ color:'#64748b', fontSize:14 }}>Memuat event...</p>
+          <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              {[1,2,3].map(i => <SkeletonCard key={i} />)}
+            </div>
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign:'center', padding:'60px 20px' }}>
@@ -238,7 +249,7 @@ export default function EventsPage() {
         )}
       </main>
 
-      <WatchlistModal cities={allKota} onSave={setWatchlist} />
+      <WatchlistModal cities={allKota} onSave={setWatchlist} watchlist={watchlist} />
       <AddEventModal onEventAdded={fetchEvents} />
     </div>
   )

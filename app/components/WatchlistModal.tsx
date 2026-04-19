@@ -1,12 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { BIRDS } from './types'
 
 export interface Watchlist { cities: string[]; birds: string[] }
 
-const BIRDS = ['Murai Batu','Kacer','Cucak Rowo','Cendet','Kenari','Lovebird','Cucak Hijau','Anis Merah','Pleci','Kolibri']
-
-export default function WatchlistModal({ cities, onSave }: { cities: string[]; onSave: (w: Watchlist) => void }) {
+export default function WatchlistModal({ cities, onSave, watchlist }: { cities: string[]; onSave: (w: Watchlist) => void; watchlist: Watchlist }) {
   const [open, setOpen] = useState(false)
   const [selCities, setSelCities] = useState<string[]>([])
   const [selBirds, setSelBirds] = useState<string[]>([])
@@ -33,7 +32,8 @@ export default function WatchlistModal({ cities, onSave }: { cities: string[]; o
     }
   }
 
-  const total = selCities.length + selBirds.length
+  // Derive total from props so badge is always in sync
+  const total = watchlist.cities.length + watchlist.birds.length
 
   return (
     <>
