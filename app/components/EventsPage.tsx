@@ -1,18 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '../../lib/supabase'
 import EventCard from './EventCard'
 import AddEventModal from './AddEventModal'
 import WatchlistModal, { Watchlist } from './WatchlistModal'
 import { Event, getDaysUntil, LEVELS, BIRDS } from './types'
 import SkeletonCard from './SkeletonCard'
-
-const supabase = (() => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
-  return url && key ? createClient(url, key) : null
-})()
 
 async function getReverseGeoCity(lat: number, lon: number): Promise<string> {
   const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)

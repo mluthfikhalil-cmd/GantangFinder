@@ -1,15 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '../../lib/supabase'
 import { LEVELS, BIRDS } from './types'
-
-const supabase = (() => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
-  return url && key ? createClient(url, key) : null
-})()
-
 
 const SANGKAR_OPTIONS = [
   'Bebas',
