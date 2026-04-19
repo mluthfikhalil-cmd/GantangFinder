@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { addEvent } from './actions'
+import { addEvent } from '../actions'
 
 const JENIS_BURUNG_OPTIONS = [
   'Murai Batu', 'Kacer', 'Cucak Rowo', 'Cendet', 'Kenari',
