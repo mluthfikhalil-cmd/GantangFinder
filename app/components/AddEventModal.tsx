@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { addEvent } from '../actions'
 
 const JENIS_BURUNG_OPTIONS = [
   'Murai Batu', 'Kacer', 'Cucak Rowo', 'Cendet', 'Kenari',
@@ -57,14 +56,32 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
     e.preventDefault()
     setLoading(true)
     setError('')
-    const formData = new FormData(e.currentTarget)
-    formData.set('jenis_burung', selectedBurung.join(','))
-    formData.set('is_featured', isFeatured ? 'true' : 'false')
-    const result = await addEvent(formData)
-    setLoading(false)
-    if (result?.error) {
-      setError(result.error)
-    } else {
+
+    try {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      if (!url || !key) throw new Error('Konfigurasi database tidak ditemukan.')
+
+      const form = e.currentTarget
+      const get = (name: string) => (form.elements.namedItem(name) as HTMLInputElement)?.value || ''
+
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(url, key)
+
+      const { error: sbError } = await supabase.from('events').insert({
+        nama_event: get('nama_event'),
+        penyelenggara: get('penyelenggara'),
+        lokasi: get('lokasi'),
+        kota: get('kota'),
+        tanggal: get('tanggal') || null,
+        jenis_burung: selectedBurung,
+        is_featured: isFeatured,
+        level_event: get('level_event') || null,
+        aturan_sangkar: get('aturan_sangkar') || null,
+      })
+
+      if (sbError) throw new Error(sbError.message)
+
       setSuccess(true)
       setTimeout(() => {
         setOpen(false)
@@ -74,6 +91,10 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
         formRef.current?.reset()
         onEventAdded?.()
       }, 1200)
+    } catch (err: any) {
+      setError(err?.message ?? 'Terjadi kesalahan.')
+    } finally {
+      setLoading(false)
     }
   }
 
