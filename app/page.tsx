@@ -1,76 +1,373 @@
 export const dynamic = 'force-dynamic'
 
-export default async function Home() {
-  let events: any[] = []
+import AddEventModal from './components/AddEventModal'
 
+interface Event {
+  id: string
+  nama_event: string
+  penyelenggara: string
+  lokasi: string
+  kota: string
+  tanggal: string | null
+  jenis_burung: string[]
+  is_featured: boolean
+}
+
+async function getEvents(): Promise<Event[]> {
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!url || !key) return []
 
-    if (url && key) {
-      const { createClient } = await import('@supabase/supabase-js')
-      const supabase = createClient(url, key)
-      const { data } = await supabase
-        .from('events')
-        .select('*')
-        .order('is_featured', { ascending: false })
-        .order('tanggal', { ascending: true })
-      events = data ?? []
-    }
-  } catch (e) {
-    console.error('Supabase error:', e)
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(url, key)
+    const { data } = await supabase
+      .from('events')
+      .select('*')
+      .order('is_featured', { ascending: false })
+      .order('tanggal', { ascending: true })
+
+    return data ?? []
+  } catch {
+    return []
   }
+}
+
+function formatTanggal(tanggal: string | null) {
+  if (!tanggal) return null
+  return new Date(tanggal).toLocaleDateString('id-ID', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  })
+}
+
+function getDaysUntil(tanggal: string | null): number | null {
+  if (!tanggal) return null
+  const diff = new Date(tanggal).getTime() - new Date().setHours(0, 0, 0, 0)
+  return Math.ceil(diff / (1000 * 60 * 60 * 24))
+}
+
+export default async function Home() {
+  const events = await getEvents()
+
+  const featuredEvents = events.filter(e => e.is_featured)
+  const regularEvents = events.filter(e => !e.is_featured)
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-4 py-4">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold text-gray-900">GantangFinder</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Temukan jadwal lomba burung kicau se-Indonesia
-          </p>
-        </div>
-      </div>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingBottom: 100 }}>
 
-      <div className="max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3">
-        {events?.map((event) => (
-          <div key={event.id} className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="flex justify-between items-start mb-2">
-              {event.is_featured ? (
-                <span className="text-xs bg-green-100 text-green-800 font-medium px-2 py-1 rounded-full">
-                  Featured
-                </span>
-              ) : (
-                <span className="text-xs text-gray-400">{event.penyelenggara}</span>
-              )}
-              <span className="text-xs text-gray-400">
-                {event.tanggal ? new Date(event.tanggal).toLocaleDateString('id-ID', {
-                  day: 'numeric', month: 'long', year: 'numeric'
-                }) : 'Jadwal rutin'}
-              </span>
+      {/* Hero Header */}
+      <header style={{
+        background: 'linear-gradient(135deg, #14532d 0%, #15803d 50%, #16a34a 100%)',
+        padding: '28px 20px 32px',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Decorative circles */}
+        <div style={{
+          position: 'absolute', top: -40, right: -40,
+          width: 180, height: 180,
+          background: 'rgba(255,255,255,0.06)',
+          borderRadius: '50%',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: -60, left: -30,
+          width: 220, height: 220,
+          background: 'rgba(255,255,255,0.04)',
+          borderRadius: '50%',
+        }} />
+
+        <div style={{ maxWidth: 640, margin: '0 auto', position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: '12px',
+              background: 'rgba(255,255,255,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '22px',
+              backdropFilter: 'blur(8px)',
+            }}>
+              🐦
             </div>
-            <h2 className="font-semibold text-gray-900 text-base mb-1">
-              {event.nama_event}
-            </h2>
-            <p className="text-sm text-gray-500 mb-3">
-              {event.lokasi}, {event.kota}
-            </p>
-            <div className="flex gap-2 flex-wrap">
-              {event.jenis_burung?.map((burung: string) => (
-                <span key={burung} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                  {burung}
-                </span>
-              ))}
+            <div>
+              <h1 style={{
+                color: '#fff', fontSize: '26px', fontWeight: 800,
+                letterSpacing: '-0.5px', lineHeight: 1.1,
+              }}>
+                GantangFinder
+              </h1>
+              <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '13px', fontWeight: 500 }}>
+                Jadwal Lomba Burung Kicau se-Indonesia
+              </p>
             </div>
           </div>
-        ))}
+
+          {/* Stats */}
+          <div style={{
+            marginTop: 20,
+            display: 'flex', gap: 10,
+          }}>
+            <div style={{
+              background: 'rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(8px)',
+              borderRadius: 10, padding: '8px 14px',
+              border: '1px solid rgba(255,255,255,0.15)',
+            }}>
+              <div style={{ color: '#fff', fontSize: '20px', fontWeight: 800 }}>{events.length}</div>
+              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 500 }}>Total Event</div>
+            </div>
+            <div style={{
+              background: 'rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(8px)',
+              borderRadius: 10, padding: '8px 14px',
+              border: '1px solid rgba(255,255,255,0.15)',
+            }}>
+              <div style={{ color: '#fbbf24', fontSize: '20px', fontWeight: 800 }}>{featuredEvents.length}</div>
+              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 500 }}>Featured</div>
+            </div>
+            <div style={{
+              background: 'rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(8px)',
+              borderRadius: 10, padding: '8px 14px',
+              border: '1px solid rgba(255,255,255,0.15)',
+            }}>
+              <div style={{ color: '#86efac', fontSize: '20px', fontWeight: 800 }}>
+                {events.filter(e => e.tanggal && getDaysUntil(e.tanggal)! >= 0 && getDaysUntil(e.tanggal)! <= 30).length}
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 500 }}>Bulan Ini</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Content */}
+      <main style={{ maxWidth: 640, margin: '0 auto', padding: '20px 16px' }}>
+
+        {events.length === 0 ? (
+          /* Empty State */
+          <div style={{
+            textAlign: 'center', padding: '60px 20px',
+            animation: 'fadeIn 0.5s ease forwards',
+          }}>
+            <div style={{ fontSize: '64px', marginBottom: 16 }}>🐦</div>
+            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>
+              Belum ada event
+            </h2>
+            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: 24 }}>
+              Jadilah yang pertama menambahkan event lomba burung kicau!
+            </p>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: '#dcfce7', color: '#15803d',
+              padding: '8px 16px', borderRadius: 9999,
+              fontSize: '13px', fontWeight: 600,
+            }}>
+              ↓ Tap tombol hijau di bawah
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Featured Section */}
+            {featuredEvents.length > 0 && (
+              <section style={{ marginBottom: 24 }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  marginBottom: 12,
+                }}>
+                  <span style={{ fontSize: '16px' }}>⭐</span>
+                  <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#92400e' }}>
+                    Featured Event
+                  </h2>
+                </div>
+                <div className="stagger" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {featuredEvents.map(event => (
+                    <EventCard key={event.id} event={event} featured />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Regular Events */}
+            {regularEvents.length > 0 && (
+              <section>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  marginBottom: 12,
+                }}>
+                  <span style={{ fontSize: '16px' }}>📅</span>
+                  <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
+                    Semua Event ({regularEvents.length})
+                  </h2>
+                </div>
+                <div className="stagger" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {regularEvents.map(event => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
+        )}
+      </main>
+
+      {/* Floating Add Button */}
+      <AddEventModal />
+    </div>
+  )
+}
+
+function EventCard({ event, featured = false }: { event: Event; featured?: boolean }) {
+  const daysUntil = getDaysUntil(event.tanggal)
+  const isUpcoming = daysUntil !== null && daysUntil >= 0
+  const isPast = daysUntil !== null && daysUntil < 0
+
+  return (
+    <div
+      style={{
+        background: featured
+          ? 'linear-gradient(135deg, #fffbeb 0%, #fef9c3 100%)'
+          : '#fff',
+        borderRadius: 16,
+        padding: '16px',
+        border: featured ? '1.5px solid #fde68a' : '1.5px solid #f1f5f9',
+        boxShadow: featured
+          ? '0 4px 16px rgba(245,158,11,0.12)'
+          : '0 2px 8px rgba(0,0,0,0.05)',
+        transition: 'all 0.2s ease',
+        cursor: 'pointer',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+      onMouseEnter={e => {
+        const el = e.currentTarget
+        el.style.transform = 'translateY(-2px)'
+        el.style.boxShadow = featured
+          ? '0 8px 24px rgba(245,158,11,0.18)'
+          : '0 8px 20px rgba(0,0,0,0.1)'
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget
+        el.style.transform = ''
+        el.style.boxShadow = featured
+          ? '0 4px 16px rgba(245,158,11,0.12)'
+          : '0 2px 8px rgba(0,0,0,0.05)'
+      }}
+    >
+      {/* Accent bar for featured */}
+      {featured && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0,
+          width: '100%', height: '3px',
+          background: 'linear-gradient(90deg, #f59e0b, #fbbf24)',
+        }} />
+      )}
+
+      {/* Top row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flex: 1 }}>
+          {featured && (
+            <span style={{
+              background: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
+              color: '#fff',
+              fontSize: '11px', fontWeight: 700,
+              padding: '3px 10px', borderRadius: 9999,
+            }}>
+              ⭐ FEATURED
+            </span>
+          )}
+          {isUpcoming && daysUntil! <= 7 && (
+            <span style={{
+              background: '#fef2f2', color: '#dc2626',
+              fontSize: '11px', fontWeight: 700,
+              padding: '3px 10px', borderRadius: 9999,
+            }}>
+              🔥 {daysUntil === 0 ? 'HARI INI' : `${daysUntil} HARI LAGI`}
+            </span>
+          )}
+          {isPast && (
+            <span style={{
+              background: '#f1f5f9', color: '#94a3b8',
+              fontSize: '11px', fontWeight: 600,
+              padding: '3px 10px', borderRadius: 9999,
+            }}>
+              Selesai
+            </span>
+          )}
+        </div>
+
+        {/* Date badge */}
+        {event.tanggal && (
+          <div style={{
+            textAlign: 'center', flexShrink: 0,
+            background: isUpcoming ? '#dcfce7' : '#f1f5f9',
+            borderRadius: 10, padding: '4px 10px',
+            marginLeft: 8,
+          }}>
+            <div style={{ fontSize: '18px', fontWeight: 800, color: isUpcoming ? '#15803d' : '#94a3b8', lineHeight: 1 }}>
+              {new Date(event.tanggal).getDate()}
+            </div>
+            <div style={{ fontSize: '10px', fontWeight: 600, color: isUpcoming ? '#16a34a' : '#94a3b8' }}>
+              {new Date(event.tanggal).toLocaleDateString('id-ID', { month: 'short' }).toUpperCase()}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 pb-8">
-        <button className="w-full bg-gray-900 text-white rounded-xl py-3 text-sm font-medium">
-          + Tambah Event Lomba
-        </button>
+      {/* Event name */}
+      <h3 style={{
+        fontSize: '16px', fontWeight: 700,
+        color: '#0f172a', marginBottom: 4,
+        lineHeight: 1.3,
+      }}>
+        {event.nama_event}
+      </h3>
+
+      {/* Organizer */}
+      <p style={{ fontSize: '13px', color: '#64748b', marginBottom: 8 }}>
+        oleh <strong style={{ color: '#374151' }}>{event.penyelenggara}</strong>
+      </p>
+
+      {/* Location */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 5,
+        marginBottom: event.jenis_burung?.length > 0 ? 10 : 0,
+      }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+          <circle cx="12" cy="10" r="3" />
+        </svg>
+        <span style={{ fontSize: '13px', color: '#64748b' }}>
+          {event.lokasi ? `${event.lokasi}, ` : ''}{event.kota}
+        </span>
       </div>
-    </main>
+
+      {/* Full date text */}
+      {event.tanggal && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 5, marginBottom: 10,
+        }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <span style={{ fontSize: '13px', color: '#64748b' }}>
+            {formatTanggal(event.tanggal)}
+          </span>
+        </div>
+      )}
+
+      {/* Bird types */}
+      {event.jenis_burung?.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {event.jenis_burung.map(burung => (
+            <span key={burung} style={{
+              background: '#f0fdf4', color: '#15803d',
+              fontSize: '11px', fontWeight: 600,
+              padding: '3px 10px', borderRadius: 9999,
+              border: '1px solid #bbf7d0',
+            }}>
+              {burung}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
