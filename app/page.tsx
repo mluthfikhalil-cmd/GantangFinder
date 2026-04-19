@@ -1,14 +1,25 @@
-import { getSupabase } from '@/lib/supabase'
-
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
-  const supabase = getSupabase()
-  const { data: events } = await supabase
-    .from('events')
-    .select('*')
-    .order('is_featured', { ascending: false })
-    .order('tanggal', { ascending: true })
+  let events: any[] = []
+
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (url && key) {
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(url, key)
+      const { data } = await supabase
+        .from('events')
+        .select('*')
+        .order('is_featured', { ascending: false })
+        .order('tanggal', { ascending: true })
+      events = data ?? []
+    }
+  } catch (e) {
+    console.error('Supabase error:', e)
+  }
 
   return (
     <main className="min-h-screen bg-gray-50">
