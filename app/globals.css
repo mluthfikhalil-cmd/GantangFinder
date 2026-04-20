@@ -1,20 +1,36 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
 :root {
-  --primary: #16a34a;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-card: #ffffff;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --border-color: #e5e7eb;
+  --accent-green: #16a34a;
+  --accent-amber: #d97706;
+  --featured-bg: #fffbeb;
+  --featured-border: #fbbf24;
+  --header-bg: #ffffff;
+  --tab-active-bg: #111827;
+  --tab-active-text: #ffffff;
+  --banner-bg: #eff6ff;
+  --banner-text: #1d4ed8;
+  
+  /* Retain old variables mapping for fallback/compatibility if needed */
+  --primary: var(--accent-green);
   --primary-dark: #14532d;
   --primary-hover: #15803d;
   --primary-light: #dcfce7;
-  --accent: #f59e0b;
+  --accent: var(--accent-amber);
   --accent-light: #fef3c7;
-  --bg: #f0fdf4;
-  --bg-secondary: #f8fafc;
-  --surface: #ffffff;
-  --border: #e2e8f0;
+  --bg: var(--bg-primary);
+  --surface: var(--bg-card);
+  --border: var(--border-color);
   --border-light: #f1f5f9;
-  --text: #0f172a;
-  --text-muted: #64748b;
-  --text-light: #94a3b8;
+  --text: var(--text-primary);
+  --text-light: var(--text-muted);
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
@@ -22,6 +38,38 @@
   --radius: 16px;
   --radius-sm: 10px;
   --radius-full: 9999px;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-card: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: #334155;
+  --accent-green: #22c55e;
+  --accent-amber: #fbbf24;
+  --featured-bg: #1c1a0a;
+  --featured-border: #854d0e;
+  --header-bg: rgba(15, 23, 42, 0.9);
+  --tab-active-bg: #f1f5f9;
+  --tab-active-text: #0f172a;
+  --banner-bg: #0c1a3a;
+  --banner-text: #93c5fd;
+  
+  --primary: var(--accent-green);
+  --primary-dark: #16a34a;
+  --primary-hover: #4ade80;
+  --primary-light: #14532d;
+  --accent: var(--accent-amber);
+  --accent-light: #78350f;
+  --bg: var(--bg-primary);
+  --surface: var(--bg-card);
+  --border: var(--border-color);
+  --border-light: #475569;
+  --text: var(--text-primary);
+  --text-light: var(--text-muted);
 }
 
 * {
@@ -36,16 +84,27 @@ html {
 
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Animations */
+/* Animasi */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -54,14 +113,9 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 @keyframes pulse-green {
@@ -69,31 +123,85 @@ body {
   50% { box-shadow: 0 0 0 8px rgba(22, 163, 74, 0); }
 }
 
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Apply ke elemen */
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
 .animate-fade-in {
-  animation: fadeIn 0.4s ease forwards;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out forwards;
 }
 
 .animate-slide-up {
   animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-.animate-scale-in {
-  animation: scaleIn 0.2s ease forwards;
+/* Stagger untuk list items */
+.event-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: fadeInUp 0.4s ease-out forwards;
+  opacity: 0;
+}
+.event-card:nth-child(1) { animation-delay: 0.05s; }
+.event-card:nth-child(2) { animation-delay: 0.1s; }
+.event-card:nth-child(3) { animation-delay: 0.15s; }
+.event-card:nth-child(4) { animation-delay: 0.2s; }
+.event-card:nth-child(5) { animation-delay: 0.25s; }
+.event-card:nth-child(n+6) { animation-delay: 0.3s; }
+
+.event-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
-/* Stagger children */
-.stagger > * { animation: fadeIn 0.4s ease forwards; opacity: 0; }
-.stagger > *:nth-child(1) { animation-delay: 0.05s; }
-.stagger > *:nth-child(2) { animation-delay: 0.10s; }
-.stagger > *:nth-child(3) { animation-delay: 0.15s; }
-.stagger > *:nth-child(4) { animation-delay: 0.20s; }
-.stagger > *:nth-child(5) { animation-delay: 0.25s; }
-.stagger > *:nth-child(6) { animation-delay: 0.30s; }
-.stagger > *:nth-child(7) { animation-delay: 0.35s; }
-.stagger > *:nth-child(8) { animation-delay: 0.40s; }
+/* Featured badge pulse */
+.featured-badge {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* Tombol hover */
+button, a[href] {
+  transition: opacity 0.15s ease, transform 0.15s ease, background-color 0.2s ease, color 0.2s ease;
+}
+button:active {
+  transform: scale(0.97);
+}
+
+/* Modal masuk */
+.modal-overlay {
+  animation: fadeIn 0.2s ease-out;
+}
+.modal-content {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Tab switch smooth */
+.tab-content {
+  animation: fadeIn 0.25s ease-out;
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, 
+    var(--border-color) 25%, 
+    var(--bg-secondary) 50%, 
+    var(--border-color) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }

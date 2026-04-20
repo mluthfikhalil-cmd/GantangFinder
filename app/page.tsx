@@ -45,6 +45,23 @@ export default function Home() {
   const [modal, setModal] = useState(false)
   const [subModal, setSubModal] = useState(false)
   const [toast, setToast] = useState('')
+  const [theme, setTheme] = useState<'light'|'dark'>('light')
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light')
+    const handleScroll = () => setScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(newTheme)
+    if (newTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark')
+    else document.documentElement.removeAttribute('data-theme')
+    localStorage.setItem('gantang-theme', newTheme)
+  }
 
   useEffect(() => {
     if (!SB_URL || !SB_KEY) { setErr('Env vars tidak ditemukan'); setLoading(false); return }
@@ -68,35 +85,40 @@ export default function Home() {
   const featured = list.filter(e => isActiveFeatured(e))
   const regular = list.filter(e => !isActiveFeatured(e))
 
-  const btn = (active:boolean, label:string, onClick:()=>void, color='#0f172a') => (
-    <button onClick={onClick} style={{padding:'5px 14px',borderRadius:9999,fontSize:12,fontWeight:700,fontFamily:'inherit',cursor:'pointer',flexShrink:0,border:`1.5px solid ${active?color:'#e2e8f0'}`,background:active?color:'#fff',color:active?'#fff':'#64748b'}}>{label}</button>
+  const btn = (active:boolean, label:string, onClick:()=>void, color='var(--accent-green)') => (
+    <button onClick={onClick} style={{padding:'5px 14px',borderRadius:9999,fontSize:12,fontWeight:700,fontFamily:'inherit',cursor:'pointer',flexShrink:0,border:`1.5px solid ${active?color:'var(--border-color)'}`,background:active?color:'var(--bg-card)',color:active?'#fff':'var(--text-secondary)'}}>{label}</button>
   )
 
   return (
-    <div style={{minHeight:'100vh',background:'#f0fdf4',paddingBottom:100}}>
+    <div style={{minHeight:'100vh',background:'var(--bg-secondary)',paddingBottom:100, transition:'background-color 0.3s'}}>
       {/* Hero */}
-      <header style={{background:'linear-gradient(135deg,#14532d,#16a34a)',padding:'28px 20px 20px'}}>
+      <header style={{background: 'var(--header-bg)', padding:'28px 20px 20px', transition: 'box-shadow 0.3s', borderBottom: '1px solid var(--border-color)', boxShadow: scrolled ? '0 4px 6px -1px rgba(0,0,0,0.05)' : 'none', position: 'sticky', top: 0, zIndex: 40}}>
         <div style={{maxWidth:640,margin:'0 auto'}}>
-          <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
-            <div style={{width:44,height:44,borderRadius:12,background:'rgba(255,255,255,.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22}}>{tab==='kicau'?'🐦':'🕊️'}</div>
-            <div>
-              <h1 style={{color:'#fff',fontSize:24,fontWeight:800,margin:0}}>GantangFinder</h1>
-              <p style={{color:'rgba(255,255,255,.8)',fontSize:13,margin:0}}>{tab==='kicau'?'Lomba Burung Kicau':'Lomba Merpati / Dara'} se-Indonesia</p>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+            <div style={{display:'flex',alignItems:'center',gap:12}}>
+              <div style={{width:44,height:44,borderRadius:12,background:'var(--accent-green)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22}}>{tab==='kicau'?'🐦':'🕊️'}</div>
+              <div>
+                <h1 style={{color:'var(--text-primary)',fontSize:24,fontWeight:800,margin:0, letterSpacing: '-0.5px'}}>GantangFinder</h1>
+                <p style={{color:'var(--text-secondary)',fontSize:13,margin:0}}>{tab==='kicau'?'Lomba Burung Kicau':'Lomba Merpati / Dara'} se-Indonesia</p>
+              </div>
             </div>
+            <button onClick={toggleTheme} style={{width: 36, height: 36, borderRadius: '50%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18}}>
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
           </div>
           <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:16}}>
-            {[{v:list.length,l:'Total Event',c:'#fff'},{v:list.filter(e=>e.is_featured).length,l:'Featured',c:'#fbbf24'},{v:list.filter(e=>{const d=days(e.tanggal);return d!==null&&d>=0&&d<=30}).length,l:'Bulan Ini',c:'#86efac'}].map(s=>(
-              <div key={s.l} style={{background:'rgba(255,255,255,.12)',borderRadius:10,padding:'8px 14px'}}>
+            {[{v:list.length,l:'Total Event',c:'var(--text-primary)'},{v:list.filter(e=>e.is_featured).length,l:'Featured',c:'var(--accent-amber)'},{v:list.filter(e=>{const d=days(e.tanggal);return d!==null&&d>=0&&d<=30}).length,l:'Bulan Ini',c:'var(--accent-green)'}].map(s=>(
+              <div key={s.l} style={{background:'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius:10,padding:'8px 14px', flex: '1 1 auto', minWidth: 90}}>
                 <div style={{color:s.c,fontSize:20,fontWeight:800}}>{loading?'—':s.v}</div>
-                <div style={{color:'rgba(255,255,255,.7)',fontSize:11}}>{s.l}</div>
+                <div style={{color:'var(--text-secondary)',fontSize:11}}>{s.l}</div>
               </div>
             ))}
           </div>
           {/* Tab Toggle */}
-          <div style={{display:'flex',gap:8}}>
+          <div style={{display:'flex',gap:8, background: 'var(--bg-secondary)', padding: 4, borderRadius: 12}}>
             {(['kicau','merpati'] as const).map(t=>(
-              <button key={t} onClick={()=>{setTab(t);setLevel('');setKatMer('');setKelas('')}} style={{padding:'10px 20px',borderRadius:10,fontSize:14,fontWeight:700,fontFamily:'inherit',cursor:'pointer',border:'none',background:tab===t?'#fff':' rgba(255,255,255,.15)',color:tab===t?'#14532d':'#fff',flex:1,transition:'all .2s'}}>
-                {t==='kicau'?'🐦 Lomba Kicau':'🕊️ Merpati / Dara'}
+              <button key={t} onClick={()=>{setTab(t);setLevel('');setKatMer('');setKelas('')}} style={{padding:'8px 16px',borderRadius:8,fontSize:14,fontWeight:700,fontFamily:'inherit',cursor:'pointer',border:'none',background:tab===t?'var(--tab-active-bg)':'transparent',color:tab===t?'var(--tab-active-text)':'var(--text-secondary)',flex:1}}>
+                {t==='kicau'?'🐦 Kicau':'🕊️ Merpati'}
               </button>
             ))}
           </div>
@@ -104,27 +126,21 @@ export default function Home() {
       </header>
 
       {/* Filter Bar */}
-      <div style={{background:'#fff',borderBottom:'1px solid #f1f5f9',padding:'12px 16px',position:'sticky',top:0,zIndex:30,boxShadow:'0 2px 8px rgba(0,0,0,.06)'}}>
+      <div style={{background:'rgba(var(--header-bg), 0.85)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom:'1px solid var(--border-color)',padding:'12px 16px'}}>
         <div style={{maxWidth:640,margin:'0 auto',display:'flex',flexDirection:'column',gap:8}}>
           <div style={{display:'flex',gap:8}}>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Cari nama event..." style={{flex:1,padding:'9px 12px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
-            <input value={kota} onChange={e=>setKota(e.target.value)} placeholder="📍 Kota..." style={{flex:1,padding:'9px 12px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Cari nama event..." style={{flex:1,padding:'9px 12px',background:'var(--bg-secondary)', color:'var(--text-primary)', border:'1px solid var(--border-color)',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
+            <input value={kota} onChange={e=>setKota(e.target.value)} placeholder="📍 Kota..." style={{flex:1,padding:'9px 12px',background:'var(--bg-secondary)', color:'var(--text-primary)', border:'1px solid var(--border-color)',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
           </div>
-          {tab==='kicau' && (
-            <div style={{display:'flex',gap:6,overflowX:'auto'}}>
-              {['','Latber','Latpres','Regional','Nasional'].map(l=>btn(level===l,l||'Semua',()=>setLevel(l)))}
-            </div>
-          )}
-          {tab==='merpati' && (
-            <>
-              <div style={{display:'flex',gap:6,overflowX:'auto'}}>
-                {['','sprint','kolong','pos','tinggi bebas'].map(k=>btn(katMer===k,k?k.charAt(0).toUpperCase()+k.slice(1):'Semua Kategori',()=>setKatMer(k),'#1d4ed8'))}
-              </div>
-              <div style={{display:'flex',gap:6,overflowX:'auto'}}>
+          <div className="tab-content" style={{display:'flex',gap:6,overflowX:'auto', paddingBottom: 4}}>
+            {tab==='kicau' ? ['','Latber','Latpres','Regional','Nasional'].map(l=>btn(level===l,l||'Semua',()=>setLevel(l))) : (
+              <>
+                {['','sprint','kolong','pos','tinggi bebas'].map(k=>btn(katMer===k,k?k.charAt(0).toUpperCase()+k.slice(1):'Semua',()=>setKatMer(k),'var(--banner-text)'))}
+                <div style={{width: 1, background: 'var(--border-color)'}}></div>
                 {['','Junior','Utama','Galatama'].map(k=>btn(kelas===k,k||'Semua Kelas',()=>setKelas(k),'#7c3aed'))}
-              </div>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -132,32 +148,33 @@ export default function Home() {
       <main style={{maxWidth:640,margin:'0 auto',padding:16}}>
         {err && <div style={{padding:12,background:'#fef2f2',border:'1px solid #fecaca',borderRadius:10,color:'#b91c1c',fontSize:13,marginBottom:16}}>⚠️ {err}</div>}
         {/* Subscriber Banner */}
-        <div style={{background:'linear-gradient(135deg,#eff6ff,#dbeafe)',borderRadius:16,padding:'16px 18px',border:'1.5px solid #bfdbfe',marginBottom:20,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
+        <div style={{background:'var(--banner-bg)',borderRadius:16,padding:'16px 18px',border:'1.5px solid var(--border-color)',marginBottom:20,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
           <div style={{flex:1}}>
-            <p style={{fontSize:14,fontWeight:700,color:'#1d4ed8',margin:0}}>🔔 Jangan lewatkan lomba di kotamu!</p>
-            <p style={{fontSize:12,color:'#3b82f6',marginTop:2,marginBottom:0}}>Daftar gratis, dapat notif WhatsApp tiap ada event baru.</p>
+            <p style={{fontSize:14,fontWeight:700,color:'var(--banner-text)',margin:0}}>🔔 Jangan lewatkan lomba di kotamu!</p>
+            <p style={{fontSize:12,color:'var(--text-secondary)',marginTop:2,marginBottom:0}}>Daftar gratis, dapat notif WhatsApp tiap ada event baru.</p>
           </div>
-          <button onClick={()=>setSubModal(true)} style={{background:'#1d4ed8',color:'#fff',border:'none',borderRadius:10,padding:'9px 16px',fontSize:13,fontWeight:700,fontFamily:'inherit',cursor:'pointer',flexShrink:0}}>Daftar</button>
+          <button onClick={()=>setSubModal(true)} style={{background:'var(--banner-text)',color:'#fff',border:'none',borderRadius:10,padding:'9px 16px',fontSize:13,fontWeight:700,fontFamily:'inherit',cursor:'pointer',flexShrink:0}}>Daftar</button>
         </div>
         {loading ? (
-          <div style={{textAlign:'center',padding:'60px 20px'}}>
-            <div style={{fontSize:40}}>{tab==='kicau'?'🐦':'🕊️'}</div>
-            <p style={{color:'#64748b',marginTop:8}}>Memuat event...</p>
+          <div style={{display:'flex',flexDirection:'column',gap:16}}>
+            {[1,2,3].map(i => (
+              <div key={i} className="skeleton" style={{borderRadius: 16, padding: 20, height: 160}}></div>
+            ))}
           </div>
         ) : list.length===0 ? (
-          <div style={{textAlign:'center',padding:'60px 20px'}}>
+          <div style={{textAlign:'center',padding:'60px 20px'}} className="animate-fade-in-up">
             <div style={{fontSize:48}}>🔍</div>
-            <h2 style={{color:'#0f172a',marginTop:12}}>Belum ada event</h2>
-            <p style={{color:'#64748b'}}>Jadilah yang pertama menambahkan event!</p>
+            <h2 style={{color:'var(--text-primary)',marginTop:12}}>Belum ada event</h2>
+            <p style={{color:'var(--text-secondary)'}}>Jadilah yang pertama menambahkan event!</p>
           </div>
         ) : (
           <>
             {featured.length>0 && <section style={{marginBottom:24}}>
-              <h2 style={{fontSize:15,fontWeight:700,color:'#92400e',marginBottom:10}}>⭐ Featured Event</h2>
+              <h2 style={{fontSize:15,fontWeight:700,color:'var(--accent-amber)',marginBottom:10}}>⭐ Featured Event</h2>
               {featured.map(e=><Card key={e.id} ev={e} tab={tab}/>)}
             </section>}
             {regular.length>0 && <section>
-              <h2 style={{fontSize:15,fontWeight:700,color:'#0f172a',marginBottom:10}}>📅 Semua Event ({regular.length})</h2>
+              <h2 style={{fontSize:15,fontWeight:700,color:'var(--text-primary)',marginBottom:10}}>📅 Semua Event ({regular.length})</h2>
               {regular.map(e=><Card key={e.id} ev={e} tab={tab}/>)}
             </section>}
           </>
@@ -189,28 +206,28 @@ function Card({ev,tab}:{ev:Ev,tab:string}) {
   const lc = ev.level_event && LC[ev.level_event]
   const mc = ev.kategori_merpati && MC[ev.kategori_merpati]
   const cardBody = (
-    <div style={{background:ev.is_featured?'#fffbeb':'#fff',borderRadius:16,padding:16,border:ev.is_featured?'1.5px solid #fde68a':'1.5px solid #f1f5f9',boxShadow:'0 2px 8px rgba(0,0,0,.05)'}}>
+    <div className="event-card" style={{background:ev.is_featured?'var(--featured-bg)':'var(--bg-card)',borderRadius:16,padding:20,border:ev.is_featured?'1.5px solid var(--featured-border)':'1px solid var(--border-color)'}}>
       <div style={{display:'flex',gap:6,marginBottom:8,flexWrap:'wrap'}}>
-        {ev.is_featured && <span style={{background:'linear-gradient(135deg,#f59e0b,#fbbf24)',color:'#fff',fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:9999}}>⭐ FEATURED</span>}
-        {ev.foto_hasil && <span style={{background:'#eff6ff',color:'#1d4ed8',border:'1px solid #93c5fd',fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:9999}}>📸 HASIL TERSEDIA</span>}
+        {ev.is_featured && <span className="featured-badge" style={{background:'linear-gradient(135deg,#f59e0b,#fbbf24)',color:'#fff',fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:9999}}>⭐ FEATURED</span>}
+        {ev.foto_hasil && <span style={{background:'var(--banner-bg)',color:'var(--banner-text)',border:'1px solid var(--border-color)',fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:9999}}>📸 HASIL TERSEDIA</span>}
         {lc && <span style={{background:lc.bg,color:lc.color,border:`1px solid ${lc.border}`,fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:9999}}>{ev.level_event}</span>}
         {mc && <span style={{background:mc.bg,color:mc.color,fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:9999,border:`1px solid ${mc.color}22`}}>{(ev.kategori_merpati??'').charAt(0).toUpperCase()+(ev.kategori_merpati??'').slice(1)}</span>}
         {d!==null && d>=0 && d<=7 && <span style={{background:'#fef2f2',color:'#dc2626',fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:9999}}>🔥 {d===0?'HARI INI':`${d} HARI LAGI`}</span>}
-        {d!==null && d<0 && <span style={{background:'#f1f5f9',color:'#94a3b8',fontSize:11,padding:'3px 10px',borderRadius:9999}}>Selesai</span>}
+        {d!==null && d<0 && <span style={{background:'var(--bg-secondary)',color:'var(--text-secondary)',fontSize:11,padding:'3px 10px',borderRadius:9999}}>Selesai</span>}
       </div>
-      <h3 style={{fontSize:16,fontWeight:700,color:'#0f172a',marginBottom:4}}>{ev.nama_event}</h3>
-      <p style={{fontSize:13,color:'#64748b',marginBottom:4}}>oleh <strong>{ev.penyelenggara}</strong></p>
-      <p style={{fontSize:13,color:'#64748b',marginBottom:ev.tanggal?4:8}}>📍 {ev.lokasi?`${ev.lokasi}, `:''}{ ev.kota}</p>
-      {ev.tanggal && <p style={{fontSize:13,color:'#64748b',marginBottom:8}}>📅 {fmt(ev.tanggal)}</p>}
+      <h3 style={{fontSize:16,fontWeight:700,color:'var(--text-primary)',marginBottom:4}}>{ev.nama_event}</h3>
+      <p style={{fontSize:13,color:'var(--text-secondary)',marginBottom:4}}>oleh <strong style={{color:'var(--text-primary)'}}>{ev.penyelenggara}</strong></p>
+      <p style={{fontSize:13,color:'var(--text-secondary)',marginBottom:ev.tanggal?4:8}}>📍 {ev.lokasi?`${ev.lokasi}, `:''}{ ev.kota}</p>
+      {ev.tanggal && <p style={{fontSize:13,color:'var(--text-secondary)',marginBottom:8}}>📅 {fmt(ev.tanggal)}</p>}
       {tab==='merpati' && (ev.jarak_meter||ev.kategori_kelas) && (
-        <p style={{fontSize:13,color:'#1d4ed8',fontWeight:600,marginBottom:8}}>
+        <p style={{fontSize:13,color:'var(--banner-text)',fontWeight:600,marginBottom:8}}>
           🏁 {[ev.kategori_merpati?ev.kategori_merpati.charAt(0).toUpperCase()+ev.kategori_merpati.slice(1):null, fmtJarak(ev.jarak_meter), ev.kategori_kelas?`Kelas ${ev.kategori_kelas}`:null].filter(Boolean).join(' · ')}
         </p>
       )}
-      {tab==='kicau' && ev.aturan_sangkar && <p style={{fontSize:12,color:'#64748b',marginBottom:8}}>🏮 Sangkar: <strong>{ev.aturan_sangkar}</strong></p>}
+      {tab==='kicau' && ev.aturan_sangkar && <p style={{fontSize:12,color:'var(--text-secondary)',marginBottom:8}}>🏮 Sangkar: <strong style={{color:'var(--text-primary)'}}>{ev.aturan_sangkar}</strong></p>}
       {ev.jenis_burung && ev.jenis_burung.length>0 && (
         <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:10}}>
-          {ev.jenis_burung.map(b=><span key={b} style={{background:'#f0fdf4',color:'#15803d',fontSize:11,fontWeight:600,padding:'3px 10px',borderRadius:9999,border:'1px solid #bbf7d0'}}>{b}</span>)}
+          {ev.jenis_burung.map(b=><span key={b} style={{background:'rgba(22, 163, 74, 0.1)',color:'var(--accent-green)',fontSize:11,fontWeight:600,padding:'3px 10px',borderRadius:9999,border:'1px solid rgba(22, 163, 74, 0.2)'}}>{b}</span>)}
         </div>
       )}
     </div>
@@ -259,20 +276,20 @@ function AddModal({tab,onClose,onSaved}:{tab:string,onClose:()=>void,onSaved:(e:
   }
 
   const inp=(name:string,label:string,placeholder:string,type='text')=>(
-    <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>{label}</label>
-    <input name={name} type={type} placeholder={placeholder} style={{width:'100%',padding:'11px 14px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:14,fontFamily:'inherit',outline:'none'}}/></div>
+    <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'var(--text-primary)',marginBottom:6}}>{label}</label>
+    <input name={name} type={type} placeholder={placeholder} style={{width:'100%',padding:'11px 14px',background:'var(--bg-primary)',border:'1px solid var(--border-color)',color:'var(--text-primary)',borderRadius:10,fontSize:14,fontFamily:'inherit',outline:'none'}}/></div>
   )
 
   const birdList = tab==='merpati' ? BIRDS_MER : BIRDS
 
   return (
     <>
-      <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.5)',backdropFilter:'blur(4px)',zIndex:50}}/>
-      <div style={{position:'fixed',bottom:0,left:0,right:0,background:'#fff',borderRadius:'24px 24px 0 0',zIndex:51,maxHeight:'90vh',overflowY:'auto',boxShadow:'0 -8px 40px rgba(0,0,0,.15)'}}>
-        <div style={{display:'flex',justifyContent:'center',padding:'12px 0 0'}}><div style={{width:40,height:4,background:'#e2e8f0',borderRadius:2}}/></div>
+      <div className="modal-overlay animate-fade-in" onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.5)',backdropFilter:'blur(4px)',zIndex:50}}/>
+      <div className="modal-content animate-slide-up" style={{position:'fixed',bottom:0,left:0,right:0,background:'var(--bg-primary)',borderRadius:'24px 24px 0 0',zIndex:51,maxHeight:'90vh',overflowY:'auto',boxShadow:'var(--shadow)'}}>
+        <div style={{display:'flex',justifyContent:'center',padding:'12px 0 0'}}><div style={{width:40,height:4,background:'var(--border-color)',borderRadius:2}}/></div>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 24px 0'}}>
-          <h2 style={{fontSize:18,fontWeight:800,color:'#0f172a'}}>{tab==='kicau'?'🐦':'🕊️'} Tambah {tab==='kicau'?'Event Kicau':'Event Merpati'}</h2>
-          <button onClick={onClose} style={{background:'#f1f5f9',border:'none',borderRadius:'50%',width:36,height:36,cursor:'pointer',fontSize:18}}>✕</button>
+          <h2 style={{fontSize:18,fontWeight:800,color:'var(--text-primary)'}}>{tab==='kicau'?'🐦':'🕊️'} Tambah {tab==='kicau'?'Event Kicau':'Event Merpati'}</h2>
+          <button onClick={onClose} style={{background:'var(--bg-secondary)',border:'none',borderRadius:'50%',width:36,height:36,cursor:'pointer',fontSize:18,color:'var(--text-secondary)'}}>✕</button>
         </div>
         <form onSubmit={submit} style={{padding:'20px 24px 40px',display:'flex',flexDirection:'column',gap:14}}>
           {inp('nama','Nama Event *','cth: Kejuaraan Merpati Sprint 2026')}
@@ -282,7 +299,7 @@ function AddModal({tab,onClose,onSaved}:{tab:string,onClose:()=>void,onSaved:(e:
           {inp('tanggal','Tanggal','','date')}
 
           {tab==='kicau' && <>
-            <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Level Event</label>
+            <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'var(--text-primary)',marginBottom:6}}>Level Event</label>
               <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                 {['Latber','Latpres','Regional','Nasional'].map(l=>{const lc=LC[l];return(
                   <label key={l} style={{cursor:'pointer'}}><input type="radio" name="level" value={l} style={{display:'none'}}/>
@@ -290,8 +307,8 @@ function AddModal({tab,onClose,onSaved}:{tab:string,onClose:()=>void,onSaved:(e:
                 )})}
               </div>
             </div>
-            <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Aturan Sangkar</label>
-              <select name="sangkar" style={{width:'100%',padding:'11px 14px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:14,fontFamily:'inherit',outline:'none'}}>
+            <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'var(--text-primary)',marginBottom:6}}>Aturan Sangkar</label>
+              <select name="sangkar" style={{width:'100%',padding:'11px 14px',border:'1px solid var(--border-color)',background:'var(--bg-primary)',color:'var(--text-primary)',borderRadius:10,fontSize:14,fontFamily:'inherit',outline:'none'}}>
                 <option value="">-- Pilih --</option>
                 {SANGKAR.map(s=><option key={s} value={s}>{s}</option>)}
               </select>
@@ -299,7 +316,7 @@ function AddModal({tab,onClose,onSaved}:{tab:string,onClose:()=>void,onSaved:(e:
           </>}
 
           {tab==='merpati' && <>
-            <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Kategori Lomba</label>
+            <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'var(--text-primary)',marginBottom:6}}>Kategori Lomba</label>
               <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                 {['sprint','kolong','pos','tinggi bebas'].map(k=>{const mc=MC[k];return(
                   <label key={k} style={{cursor:'pointer'}}><input type="radio" name="kat_mer" value={k} style={{display:'none'}}/>
@@ -308,21 +325,21 @@ function AddModal({tab,onClose,onSaved}:{tab:string,onClose:()=>void,onSaved:(e:
               </div>
             </div>
             {inp('jarak','Jarak (meter)','cth: 500','number')}
-            <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Kelas</label>
+            <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'var(--text-primary)',marginBottom:6}}>Kelas</label>
               <div style={{display:'flex',gap:8}}>
                 {['Junior','Utama','Galatama'].map(k=>(
                   <label key={k} style={{cursor:'pointer'}}><input type="radio" name="kelas" value={k} style={{display:'none'}}/>
-                  <span style={{padding:'6px 14px',borderRadius:9999,fontSize:13,fontWeight:600,border:'1.5px solid #c4b5fd',background:'#fdf4ff',color:'#7c3aed',display:'inline-block'}}>{k}</span></label>
+                  <span style={{padding:'6px 14px',borderRadius:9999,fontSize:13,fontWeight:600,border:'1px solid var(--border-color)',background:'var(--bg-secondary)',color:'var(--text-primary)',display:'inline-block'}}>{k}</span></label>
                 ))}
               </div>
             </div>
           </>}
 
-          <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Kelas Burung</label>
-            <div style={{display:'flex',flexWrap:'wrap',gap:8,padding:12,background:'#f8fafc',borderRadius:10,border:'1.5px solid #e2e8f0'}}>
-              {birdList.map(b=><button key={b} type="button" onClick={()=>setBirds(p=>p.includes(b)?p.filter(x=>x!==b):[...p,b])} style={{padding:'5px 12px',borderRadius:9999,fontSize:12,fontWeight:600,fontFamily:'inherit',cursor:'pointer',border:birds.includes(b)?'1.5px solid #16a34a':'1.5px solid #e2e8f0',background:birds.includes(b)?'#dcfce7':'#fff',color:birds.includes(b)?'#15803d':'#64748b'}}>{b}</button>)}
+          <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'var(--text-primary)',marginBottom:6}}>Kelas Burung</label>
+            <div style={{display:'flex',flexWrap:'wrap',gap:8,padding:12,background:'var(--bg-secondary)',borderRadius:10,border:'1px solid var(--border-color)'}}>
+              {birdList.map(b=><button key={b} type="button" onClick={()=>setBirds(p=>p.includes(b)?p.filter(x=>x!==b):[...p,b])} style={{padding:'5px 12px',borderRadius:9999,fontSize:12,fontWeight:600,fontFamily:'inherit',cursor:'pointer',border:birds.includes(b)?'1.5px solid var(--accent-green)':'1px solid var(--border-color)',background:birds.includes(b)?'rgba(22, 163, 74, 0.1)':'var(--bg-primary)',color:birds.includes(b)?'var(--accent-green)':'var(--text-secondary)'}}>{b}</button>)}
             </div>
-            {birds.length>0 && <p style={{fontSize:12,color:'#16a34a',marginTop:6}}>✓ {birds.length} kelas dipilih</p>}
+            {birds.length>0 && <p style={{fontSize:12,color:'var(--accent-green)',marginTop:6}}>✓ {birds.length} kelas dipilih</p>}
           </div>
 
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px',background:'#fef3c7',borderRadius:10,border:'1.5px solid #fde68a'}}>
@@ -365,30 +382,31 @@ function SubscribeModal({onClose,onSaved}:{onClose:()=>void,onSaved:()=>void}) {
   }
 
   return (
+  return (
     <>
-      <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.5)',backdropFilter:'blur(4px)',zIndex:50}}/>
-      <div style={{position:'fixed',bottom:0,left:0,right:0,background:'#fff',borderRadius:'24px 24px 0 0',zIndex:51,maxHeight:'85vh',overflowY:'auto',boxShadow:'0 -8px 40px rgba(0,0,0,.15)'}}>
-        <div style={{display:'flex',justifyContent:'center',padding:'12px 0 0'}}><div style={{width:40,height:4,background:'#e2e8f0',borderRadius:2}}/></div>
+      <div className="modal-overlay animate-fade-in" onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.5)',backdropFilter:'blur(4px)',zIndex:50}}/>
+      <div className="modal-content animate-slide-up" style={{position:'fixed',bottom:0,left:0,right:0,background:'var(--bg-primary)',borderRadius:'24px 24px 0 0',zIndex:51,maxHeight:'85vh',overflowY:'auto',boxShadow:'var(--shadow)'}}>
+        <div style={{display:'flex',justifyContent:'center',padding:'12px 0 0'}}><div style={{width:40,height:4,background:'var(--border-color)',borderRadius:2}}/></div>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 24px 0'}}>
-          <h2 style={{fontSize:18,fontWeight:800,color:'#0f172a'}}>🔔 Info Lomba via WhatsApp</h2>
-          <button onClick={onClose} style={{background:'#f1f5f9',border:'none',borderRadius:'50%',width:36,height:36,cursor:'pointer',fontSize:18}}>✕</button>
+          <h2 style={{fontSize:18,fontWeight:800,color:'var(--text-primary)'}}>🔔 Info Lomba via WhatsApp</h2>
+          <button onClick={onClose} style={{background:'var(--bg-secondary)',border:'none',borderRadius:'50%',width:36,height:36,cursor:'pointer',fontSize:18,color:'var(--text-secondary)'}}>✕</button>
         </div>
-        <p style={{fontSize:13,color:'#64748b',padding:'8px 24px 0'}}>Daftarkan nomor WA-mu dan kami akan info kalau ada lomba baru di kotamu. Gratis!</p>
+        <p style={{fontSize:13,color:'var(--text-secondary)',padding:'8px 24px 0'}}>Daftarkan nomor WA-mu dan kami akan info kalau ada lomba baru di kotamu. Gratis!</p>
         <form onSubmit={submit} style={{padding:'16px 24px 40px',display:'flex',flexDirection:'column',gap:14}}>
           {[['nama','Nama (opsional)','cth: Ahmad'],['wa','Nomor WhatsApp *','cth: 08123456789']].map(([n,l,p])=>(
-            <div key={n}><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>{l}</label>
-            <input name={n} placeholder={p} style={{width:'100%',padding:'11px 14px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:14,fontFamily:'inherit',outline:'none'}}/></div>
+            <div key={n}><label style={{display:'block',fontSize:13,fontWeight:600,color:'var(--text-primary)',marginBottom:6}}>{l}</label>
+            <input name={n} placeholder={p} style={{width:'100%',padding:'11px 14px',background:'var(--bg-primary)',border:'1px solid var(--border-color)',color:'var(--text-primary)',borderRadius:10,fontSize:14,fontFamily:'inherit',outline:'none'}}/></div>
           ))}
           <div>
-            <label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Kota (opsional)</label>
-            <input name="kota" placeholder="cth: Surabaya" style={{width:'100%',padding:'11px 14px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:14,fontFamily:'inherit',outline:'none'}}/>
+            <label style={{display:'block',fontSize:13,fontWeight:600,color:'var(--text-primary)',marginBottom:6}}>Kota (opsional)</label>
+            <input name="kota" placeholder="cth: Surabaya" style={{width:'100%',padding:'11px 14px',background:'var(--bg-primary)',border:'1px solid var(--border-color)',color:'var(--text-primary)',borderRadius:10,fontSize:14,fontFamily:'inherit',outline:'none'}}/>
           </div>
           <div>
-            <label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:8}}>Minat Lomba *</label>
+            <label style={{display:'block',fontSize:13,fontWeight:600,color:'var(--text-primary)',marginBottom:8}}>Minat Lomba *</label>
             <div style={{display:'flex',gap:10}}>
               {[['kicau','🐦 Lomba Kicau'],['merpati','🕊️ Merpati/Dara']].map(([v,l])=>(
                 <button key={v} type="button" onClick={()=>setMinat(p=>p.includes(v)?p.filter(x=>x!==v):[...p,v])}
-                  style={{flex:1,padding:'12px 8px',borderRadius:10,fontSize:13,fontWeight:600,fontFamily:'inherit',cursor:'pointer',border:minat.includes(v)?'2px solid #16a34a':'1.5px solid #e2e8f0',background:minat.includes(v)?'#dcfce7':'#fff',color:minat.includes(v)?'#15803d':'#64748b'}}>
+                  style={{flex:1,padding:'12px 8px',borderRadius:10,fontSize:13,fontWeight:600,fontFamily:'inherit',cursor:'pointer',border:minat.includes(v)?'1px solid var(--accent-green)':'1px solid var(--border-color)',background:minat.includes(v)?'rgba(22, 163, 74, 0.1)':'var(--bg-secondary)',color:minat.includes(v)?'var(--accent-green)':'var(--text-secondary)'}}>
                   {l}{minat.includes(v)?' ✓':''}
                 </button>
               ))}

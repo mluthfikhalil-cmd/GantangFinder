@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
+import { generatePoster } from '@/app/actions/generatePoster'
 
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
@@ -12,6 +13,7 @@ interface Ev {
   level_event?: string|null; aturan_sangkar?: string|null; jenis_lomba?: string
   kategori_merpati?: string|null; jarak_meter?: number|null; kategori_kelas?: string|null
   kontak?: string|null; biaya_daftar?: number|null; foto_hasil?: string[]|string|null
+  daftar_juara?: any[]|null
 }
 
 const LC: Record<string,{bg:string;color:string;border:string}> = {
@@ -36,12 +38,40 @@ function waLink(kontak:string|null|undefined,nama:string){
 }
 function fmtBiaya(b?:number|null){if(b===null||b===undefined)return null;if(b===0)return 'Gratis';return `Rp ${b.toLocaleString('id-ID')}`}
 
+const downloadPoster = (htmlContent: string, eventName: string) => {
+  const blob = new Blob([`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Poster - ${eventName}</title>
+      <style>
+        body { margin: 0; padding: 20px; 
+               background: #f0f0f0; 
+               display: flex; justify-content: center; }
+      </style>
+    </head>
+    <body>${htmlContent}</body>
+    </html>
+  `], { type: 'text/html' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `poster-${eventName.replace(/\s+/g, '-').toLowerCase()}.html`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function DetailPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
+  const isAdmin = searchParams?.get('admin') === 'true'
   const id = params?.id as string
   const [ev, setEv] = useState<Ev|null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [posterLoading, setPosterLoading] = useState(false)
+  const [posterHtml, setPosterHtml] = useState<string|null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -78,36 +108,36 @@ export default function DetailPage() {
   const shareMsg = encodeURIComponent(`Cek lomba ${ev.nama_event} di ${ev.kota}${ev.tanggal?' tanggal '+fmt(ev.tanggal):''} - gantangfinder.vercel.app/events/${ev.id}`)
 
   return (
-    <div style={{minHeight:'100vh',background:'#f0fdf4',paddingBottom:100}}>
+    <div style={{minHeight:'100vh',background:'var(--bg-secondary)',paddingBottom:100, transition: 'background-color 0.3s'}}>
       {/* Header */}
-      <div style={{background:'linear-gradient(135deg,#14532d,#16a34a)',padding:'16px 20px 20px'}}>
+      <div style={{background:'var(--header-bg)',padding:'16px 20px 20px', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 40}}>
         <div style={{maxWidth:640,margin:'0 auto'}}>
-          <a href="/" style={{display:'inline-flex',alignItems:'center',gap:6,color:'rgba(255,255,255,.85)',textDecoration:'none',fontSize:14,fontWeight:600,marginBottom:16}}>
+          <a href="/" style={{display:'inline-flex',alignItems:'center',gap:6,color:'var(--text-secondary)',textDecoration:'none',fontSize:14,fontWeight:600,marginBottom:16}}>
             ← Kembali
           </a>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
             {ev.is_featured && <span style={{background:'linear-gradient(135deg,#f59e0b,#fbbf24)',color:'#fff',fontSize:12,fontWeight:700,padding:'4px 12px',borderRadius:9999}}>⭐ FEATURED</span>}
-            <span style={{background:'rgba(255,255,255,.2)',color:'#fff',fontSize:12,fontWeight:600,padding:'4px 12px',borderRadius:9999}}>{isMerpati?'🕊️ Merpati/Dara':'🐦 Lomba Kicau'}</span>
+            <span style={{background:'var(--bg-primary)',color:'var(--text-primary)', border: '1px solid var(--border-color)', fontSize:12,fontWeight:600,padding:'4px 12px',borderRadius:9999}}>{isMerpati?'🕊️ Merpati/Dara':'🐦 Lomba Kicau'}</span>
             {lc && <span style={{background:lc.bg,color:lc.color,fontSize:12,fontWeight:700,padding:'4px 12px',borderRadius:9999}}>{ev.level_event}</span>}
             {mc && <span style={{background:mc.bg,color:mc.color,fontSize:12,fontWeight:700,padding:'4px 12px',borderRadius:9999}}>{(ev.kategori_merpati??'').charAt(0).toUpperCase()+(ev.kategori_merpati??'').slice(1)}</span>}
           </div>
         </div>
       </div>
 
-      <div style={{maxWidth:640,margin:'0 auto',padding:'20px 16px'}}>
+      <div style={{maxWidth:640,margin:'0 auto',padding:'20px 16px'}} className="animate-fade-in-up">
         {/* Nama Event */}
-        <div style={{background:'#fff',borderRadius:16,padding:20,border:'1.5px solid #f1f5f9',boxShadow:'0 2px 8px rgba(0,0,0,.06)',marginBottom:16}}>
-          <h1 style={{fontSize:22,fontWeight:800,color:'#0f172a',marginBottom:6,lineHeight:1.3}}>{ev.nama_event}</h1>
-          <p style={{fontSize:14,color:'#64748b'}}>Diselenggarakan oleh <strong style={{color:'#0f172a'}}>{ev.penyelenggara}</strong></p>
+        <div style={{background:'var(--bg-card)',borderRadius:16,padding:20,border:'1px solid var(--border-color)',boxShadow:'var(--shadow)',marginBottom:16}}>
+          <h1 style={{fontSize:22,fontWeight:800,color:'var(--text-primary)',marginBottom:6,lineHeight:1.3}}>{ev.nama_event}</h1>
+          <p style={{fontSize:14,color:'var(--text-secondary)'}}>Diselenggarakan oleh <strong style={{color:'var(--text-primary)'}}>{ev.penyelenggara}</strong></p>
         </div>
 
         {/* Countdown */}
         {d !== null && (
-          <div style={{background:d>0?'#fef3c7':d===0?'#dcfce7':'#f1f5f9',borderRadius:16,padding:'16px 20px',border:`1.5px solid ${d>0?'#fde68a':d===0?'#86efac':'#e2e8f0'}`,marginBottom:16,textAlign:'center'}}>
-            <p style={{fontSize:28,fontWeight:800,color:d>0?'#b45309':d===0?'#15803d':'#94a3b8',margin:0}}>
+          <div style={{background:d>0?'var(--featured-bg)':d===0?'rgba(22, 163, 74, 0.1)':'var(--bg-secondary)',borderRadius:16,padding:'16px 20px',border:`1px solid ${d>0?'var(--featured-border)':d===0?'rgba(22, 163, 74, 0.2)':'var(--border-color)'}`,marginBottom:16,textAlign:'center'}}>
+            <p style={{fontSize:28,fontWeight:800,color:d>0?'var(--accent-amber)':d===0?'var(--accent-green)':'var(--text-muted)',margin:0}}>
               {d>0?`H-${d}`:d===0?'Hari ini! 🎉':'Sudah selesai'}
             </p>
-            <p style={{fontSize:13,color:d>0?'#92400e':d===0?'#166534':'#64748b',marginTop:4,marginBottom:0}}>
+            <p style={{fontSize:13,color:d>0?'var(--accent-amber)':d===0?'var(--accent-green)':'var(--text-secondary)',marginTop:4,marginBottom:0}}>
               {d>0?`${d} hari lagi menuju event`:d===0?'Event berlangsung hari ini':'Event ini sudah berakhir'}
             </p>
           </div>
@@ -134,9 +164,43 @@ export default function DetailPage() {
                 </div>
               ))}
             </div>
-            <p style={{fontSize:12,color:'#64748b',marginTop:10,textAlign:'center',fontStyle:'italic'}}>
+            <p style={{fontSize:12,color:'var(--text-secondary)',marginTop:10,textAlign:'center',fontStyle:'italic'}}>
               Klik gambar untuk memperbesar (jika didukung browser)
             </p>
+          </div>
+        )}
+
+        {/* Daftar Juara */}
+        {ev.daftar_juara && ev.daftar_juara.length > 0 && (
+          <div style={{background:'var(--bg-primary)',borderRadius:16,padding:20,border:'1px solid var(--border-color)',boxShadow:'var(--shadow)',marginBottom:16}}>
+            <h2 style={{fontSize:18,fontWeight:800,color:'var(--text-primary)',marginBottom:16,display:'flex',alignItems:'center',gap:8}}>
+              🏆 Daftar Juara
+            </h2>
+            <div style={{display:'flex',flexDirection:'column',gap:20}}>
+              {ev.daftar_juara.map((kelasData: any, i: number) => (
+                <div key={i}>
+                  <h3 style={{fontSize:15,fontWeight:700,color:'var(--accent-green)',marginBottom:10,borderBottom:'2px solid var(--border-color)',paddingBottom:6}}>
+                    {kelasData.kelas}
+                  </h3>
+                  <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                    {kelasData.juara.map((j: any, ji: number) => (
+                      <div key={ji} style={{display:'flex',alignItems:'center',gap:12,background:'var(--bg-secondary)',padding:'10px 14px',borderRadius:12,border:'1px solid var(--border-color)'}}>
+                        <div style={{
+                          width:28,height:28,borderRadius:'50%',background:j.posisi===1?'linear-gradient(135deg,#f59e0b,#fbbf24)':j.posisi===2?'linear-gradient(135deg,#94a3b8,#cbd5e1)':j.posisi===3?'linear-gradient(135deg,#b45309,#d97706)':'var(--bg-primary)',
+                          color:j.posisi<=3?'#fff':'var(--text-primary)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:800,fontSize:14,border:j.posisi>3?'1px solid var(--border-color)':'none'
+                        }}>
+                          {j.posisi}
+                        </div>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:14,fontWeight:700,color:'var(--text-primary)'}}>{j.nama_burung || 'Tanpa Nama'}</div>
+                          <div style={{fontSize:12,color:'var(--text-secondary)'}}>Pemilik: {j.pemilik || '-'}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -155,6 +219,41 @@ export default function DetailPage() {
             </div>
           ))}
         </div>
+
+        {/* Generate Poster Button (Admin Only) */}
+        {isAdmin && (
+          <div style={{marginBottom: 16}}>
+            <button 
+              onClick={async () => {
+                try {
+                  setPosterLoading(true)
+                  const html = await generatePoster({
+                    nama_event: ev.nama_event,
+                    tanggal: ev.tanggal || '',
+                    kota: ev.kota,
+                    lokasi: ev.lokasi || '',
+                    jenis_burung: ev.jenis_burung || [],
+                    penyelenggara: ev.penyelenggara,
+                    biaya_daftar: ev.biaya_daftar ?? null,
+                    kontak: ev.kontak || '',
+                    jenis_lomba: ev.jenis_lomba || 'kicau',
+                    kategori_kelas: ev.kategori_kelas,
+                    jarak_meter: ev.jarak_meter
+                  })
+                  setPosterHtml(html)
+                } catch (error) {
+                  alert(error instanceof Error ? error.message : 'Gagal membuat poster')
+                } finally {
+                  setPosterLoading(false)
+                }
+              }}
+              disabled={posterLoading}
+              style={{width:'100%',padding:'14px',background:'linear-gradient(135deg, #1e293b, #0f172a)',color:'#fff',border:'none',borderRadius:16,fontSize:14,fontWeight:700,cursor:posterLoading?'not-allowed':'pointer',display:'flex',justifyContent:'center',alignItems:'center',gap:8,boxShadow:'0 4px 12px rgba(15,23,42,0.2)'}}
+            >
+              {posterLoading ? '⏳ Sedang membuat poster...' : '🎨 Buat Poster Promosi AI'}
+            </button>
+          </div>
+        )}
 
         {/* Kelas Burung */}
         {ev.jenis_burung && ev.jenis_burung.length > 0 && (
@@ -205,7 +304,7 @@ export default function DetailPage() {
       </div>
 
       {/* Sticky WA Button */}
-      <div style={{position:'fixed',bottom:0,left:0,right:0,padding:'12px 16px 20px',background:'linear-gradient(to top,#fff 80%,transparent)',zIndex:40}}>
+      <div style={{position:'fixed',bottom:0,left:0,right:0,padding:'12px 16px 20px',background:'linear-gradient(to top,var(--bg-primary) 80%,transparent)',zIndex:40}}>
         <div style={{maxWidth:640,margin:'0 auto'}}>
           <a href={waLink(ev.kontak,ev.nama_event)} target="_blank" rel="noopener noreferrer"
             style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,width:'100%',padding:'16px 0',background:'#25D366',color:'#fff',borderRadius:14,fontSize:16,fontWeight:700,textDecoration:'none',boxShadow:'0 4px 20px rgba(37,211,102,.4)',boxSizing:'border-box'}}>
@@ -214,6 +313,26 @@ export default function DetailPage() {
           </a>
         </div>
       </div>
+
+      {/* Poster Modal */}
+      {posterHtml && (
+        <div className="modal-overlay animate-fade-in" style={{position:'fixed',inset:0,background:'rgba(0,0,0,.8)',zIndex:100,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div className="modal-content animate-slide-up" style={{background:'var(--bg-primary)',borderRadius:16,width:'100%',maxWidth:640,maxHeight:'80vh',overflow:'hidden',display:'flex',flexDirection:'column'}}>
+            <div style={{padding:'16px 20px',borderBottom:'1px solid var(--border-color)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <h3 style={{margin:0,fontSize:16,fontWeight:700,color:'var(--text-primary)'}}>🎨 Hasil Poster AI</h3>
+              <button onClick={()=>setPosterHtml(null)} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:'var(--text-secondary)'}}>×</button>
+            </div>
+            <div style={{flex:1,overflow:'auto',padding:20,background:'var(--bg-secondary)',display:'flex',justifyContent:'center'}}>
+              <div style={{transformOrigin:'top center',transform:'scale(0.8)'}} dangerouslySetInnerHTML={{__html: posterHtml}} />
+            </div>
+            <div style={{padding:'16px 20px',borderTop:'1px solid var(--border-color)',display:'flex',gap:12}}>
+              <button onClick={()=>downloadPoster(posterHtml, ev.nama_event)} style={{flex:1,padding:'12px',background:'#1d4ed8',color:'#fff',border:'none',borderRadius:10,fontWeight:700,cursor:'pointer'}}>
+                💾 Download HTML (Buka di Chrome → Save PDF)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

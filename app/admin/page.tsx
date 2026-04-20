@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { uploadResultImage, deleteResultImage } from '../actions'
+import { generatePoster } from '@/app/actions/generatePoster'
 
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
@@ -11,10 +12,36 @@ interface Ev {
   id: string; nama_event: string; kota: string; tanggal?: string|null
   is_featured?: boolean; featured_until?: string|null; featured_package?: string|null; jenis_lomba?: string
   penyelenggara?: string; lokasi?: string; foto_hasil?: string[]|string|null
+  jenis_burung?: string[]; biaya_daftar?: number|null; kontak?: string|null
+  kategori_kelas?: string|null; jarak_meter?: number|null; daftar_juara?: any[]|null
 }
 interface Sub {
   id: string; nama?: string|null; nomor_wa: string; kota?: string|null
   minat?: string[]|null; created_at: string; is_active?: boolean
+}
+
+const downloadPoster = (htmlContent: string, eventName: string) => {
+  const blob = new Blob([`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Poster - ${eventName}</title>
+      <style>
+        body { margin: 0; padding: 20px; 
+               background: #f0f0f0; 
+               display: flex; justify-content: center; }
+      </style>
+    </head>
+    <body>${htmlContent}</body>
+    </html>
+  `], { type: 'text/html' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `poster-${eventName.replace(/\s+/g, '-').toLowerCase()}.html`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 function fmtDate(t?: string|null) {
@@ -38,6 +65,9 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'events'|'subscribers'>('events')
   const [editEv, setEditEv] = useState<Ev | null>(null)
   const [managePhotosEv, setManagePhotosEv] = useState<Ev | null>(null)
+  const [manageJuaraEv, setManageJuaraEv] = useState<Ev | null>(null)
+  const [posterLoading, setPosterLoading] = useState<string | null>(null)
+  const [posterHtml, setPosterHtml] = useState<{html: string, ev: Ev} | null>(null)
 
   function login(e: React.FormEvent) {
     e.preventDefault()
@@ -325,6 +355,43 @@ export default function AdminPage() {
                           </td>
                           <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                             <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
+                              <div style={{ position: 'relative', display: 'inline-block' }}>
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      setPosterLoading(ev.id)
+                                      const html = await generatePoster({
+                                        nama_event: ev.nama_event,
+                                        tanggal: ev.tanggal || '',
+                                        kota: ev.kota,
+                                        lokasi: ev.lokasi || '',
+                                        jenis_burung: ev.jenis_burung || [],
+                                        penyelenggara: ev.penyelenggara || '',
+                                        biaya_daftar: ev.biaya_daftar ?? null,
+                                        kontak: ev.kontak || '',
+                                        jenis_lomba: ev.jenis_lomba || 'kicau',
+                                        kategori_kelas: ev.kategori_kelas,
+                                        jarak_meter: ev.jarak_meter
+                                      })
+                                      setPosterHtml({ html, ev })
+                                    } catch (error) {
+                                      alert(error instanceof Error ? error.message : 'Gagal membuat poster')
+                                    } finally {
+                                      setPosterLoading(null)
+                                    }
+                                  }}
+                                  disabled={posterLoading === ev.id}
+                                  style={{ padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: 'inherit', cursor: posterLoading === ev.id ? 'not-allowed' : 'pointer', border: 'none', background: '#fdf4ff', color: '#a21caf', opacity: posterLoading === ev.id ? .6 : 1, whiteSpace: 'nowrap' }}>
+                                  {posterLoading === ev.id ? '⏳ AI...' : '🎨 AI Poster'}
+                                </button>
+                              </div>
+                              {isPast && (
+                                <button
+                                  onClick={() => setManageJuaraEv(ev)}
+                                  style={{ padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700, background: '#fffbeb', color: '#b45309', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                  🏆 Input Juara
+                                </button>
+                              )}
                               {isPast && (
                                 <div style={{ position: 'relative' }}>
                                   <input 
@@ -398,6 +465,63 @@ export default function AdminPage() {
               <div>
                 <h2 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: 0 }}>📱 Subscriber WhatsApp</h2>
                 <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>{subs.length} nomor terdaftar</p>
+              </div>
+            </div>
+            <div style={{ overflowX: 'auto', margin: '-20px -20px 0', padding: '20px' }}>
+              <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse', fontSize: 14 }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#64748b', fontWeight: 600 }}>Nomor WA</th>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#64748b', fontWeight: 600 }}>Kota</th>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#64748b', fontWeight: 600 }}>Minat Lomba</th>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#64748b', fontWeight: 600 }}>Tanggal Daftar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subs.map(sub => (
+                    <tr key={sub.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                      <td style={{ padding: '10px 12px', fontWeight: 600, color: '#0f172a' }}>{sub.nomor_wa}</td>
+                      <td style={{ padding: '10px 12px', color: '#64748b' }}>{sub.kota || 'Semua Kota'}</td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {sub.minat?.map(m => (
+                            <span key={m} style={{ background: m === 'merpati' ? '#eff6ff' : '#f0fdf4', color: m === 'merpati' ? '#1d4ed8' : '#15803d', padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600 }}>
+                              {m === 'merpati' ? 'Merpati' : 'Kicau'}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td style={{ padding: '10px 12px', color: '#94a3b8', fontSize: 12 }}>
+                        {new Date(sub.created_at).toLocaleDateString('id-ID')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Poster Modal */}
+      {posterHtml && (
+        <div className="modal-overlay animate-fade-in" style={{position:'fixed',inset:0,background:'rgba(0,0,0,.8)',zIndex:100,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div className="modal-content animate-slide-up" style={{background:'#fff',borderRadius:16,width:'100%',maxWidth:640,maxHeight:'80vh',overflow:'hidden',display:'flex',flexDirection:'column'}}>
+            <div style={{padding:'16px 20px',borderBottom:'1px solid #e2e8f0',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <h3 style={{margin:0,fontSize:16,fontWeight:700}}>🎨 Hasil Poster AI: {posterHtml.ev.nama_event}</h3>
+              <button onClick={()=>setPosterHtml(null)} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:'#64748b'}}>×</button>
+            </div>
+            <div style={{flex:1,overflow:'auto',padding:20,background:'#f1f5f9',display:'flex',justifyContent:'center'}}>
+              <div style={{transformOrigin:'top center',transform:'scale(0.8)'}} dangerouslySetInnerHTML={{__html: posterHtml.html}} />
+            </div>
+            <div style={{padding:'16px 20px',borderTop:'1px solid #e2e8f0',display:'flex',gap:12}}>
+              <button onClick={()=>downloadPoster(posterHtml.html, posterHtml.ev.nama_event)} style={{flex:1,padding:'12px',background:'#1d4ed8',color:'#fff',border:'none',borderRadius:10,fontWeight:700,cursor:'pointer'}}>
+                💾 Download HTML (Buka di Chrome → Save PDF)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={loadData} style={{ padding: '7px 12px', background: '#f1f5f9', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', color: '#64748b' }}>🔄</button>
@@ -527,6 +651,119 @@ export default function AdminPage() {
           </div>
         </>
       )}
+
+      {/* Manage Juara Modal */}
+      {manageJuaraEv && (
+        <ManageJuaraModal 
+          ev={manageJuaraEv} 
+          onClose={() => setManageJuaraEv(null)} 
+          onSaved={(updatedJuara) => {
+            setEvs(prev => prev.map(e => e.id === manageJuaraEv.id ? { ...e, daftar_juara: updatedJuara } : e))
+            setManageJuaraEv(null)
+          }} 
+        />
+      )}
     </div>
+  )
+}
+
+function ManageJuaraModal({ ev, onClose, onSaved }: { ev: Ev, onClose: () => void, onSaved: (juara: any[]) => void }) {
+  const [juaraList, setJuaraList] = useState<any[]>(ev.daftar_juara || [])
+  const [loading, setLoading] = useState(false)
+
+  const addKelas = () => setJuaraList([...juaraList, { kelas: '', juara: [] }])
+  const addJuara = (kelasIndex: number) => {
+    const newList = [...juaraList]
+    newList[kelasIndex].juara.push({ posisi: newList[kelasIndex].juara.length + 1, nama_burung: '', pemilik: '' })
+    setJuaraList(newList)
+  }
+
+  const updateKelas = (index: number, val: string) => {
+    const newList = [...juaraList]; newList[index].kelas = val; setJuaraList(newList)
+  }
+  const updateJuara = (kelasIndex: number, juaraIndex: number, field: string, val: string | number) => {
+    const newList = [...juaraList]; newList[kelasIndex].juara[juaraIndex][field] = val; setJuaraList(newList)
+  }
+  const removeKelas = (index: number) => {
+    const newList = [...juaraList]; newList.splice(index, 1); setJuaraList(newList)
+  }
+  const removeJuara = (kelasIndex: number, juaraIndex: number) => {
+    const newList = [...juaraList]; newList[kelasIndex].juara.splice(juaraIndex, 1); setJuaraList(newList)
+  }
+
+  const handleSave = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`${SB_URL}/rest/v1/events?id=eq.${ev.id}`, {
+        method: 'PATCH',
+        headers: { ...H, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ daftar_juara: juaraList }),
+      })
+      if (!res.ok) throw new Error('Gagal menyimpan juara')
+      onSaved(juaraList)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error')
+    }
+    setLoading(false)
+  }
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', backdropFilter: 'blur(4px)', zIndex: 100 }} />
+      <div className="animate-slide-up" style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#fff', borderRadius: 20, width: '90%', maxWidth: 600, maxHeight: '85vh', overflowY: 'auto', zIndex: 101, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,.2)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', margin: 0 }}>🏆 Input Daftar Juara</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#64748b' }}>×</button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginBottom: 24 }}>
+          {juaraList.map((k, i) => (
+            <div key={i} style={{ background: '#f8fafc', padding: 16, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+                <input 
+                  placeholder="Nama Kelas (cth: Murai Batu Utama)" 
+                  value={k.kelas} 
+                  onChange={e => updateKelas(i, e.target.value)}
+                  style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 14, fontWeight: 600 }}
+                />
+                <button onClick={() => removeKelas(i)} style={{ padding: '0 12px', background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 'bold' }}>Hapus Kelas</button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {k.juara.map((j: any, ji: number) => (
+                  <div key={ji} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <div style={{ width: 40, textAlign: 'center', fontWeight: 'bold', color: '#64748b', fontSize: 14 }}>#{j.posisi}</div>
+                    <input 
+                      placeholder="Nama Burung" 
+                      value={j.nama_burung} 
+                      onChange={e => updateJuara(i, ji, 'nama_burung', e.target.value)}
+                      style={{ flex: 1, padding: '8px 12px', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: 13 }}
+                    />
+                    <input 
+                      placeholder="Pemilik" 
+                      value={j.pemilik} 
+                      onChange={e => updateJuara(i, ji, 'pemilik', e.target.value)}
+                      style={{ flex: 1, padding: '8px 12px', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: 13 }}
+                    />
+                    <button onClick={() => removeJuara(i, ji)} style={{ padding: '8px', background: 'none', color: '#94a3b8', border: 'none', cursor: 'pointer' }}>✖</button>
+                  </div>
+                ))}
+                <button onClick={() => addJuara(i)} style={{ alignSelf: 'flex-start', padding: '6px 12px', background: '#eff6ff', color: '#1d4ed8', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', marginTop: 4 }}>+ Tambah Juara</button>
+              </div>
+            </div>
+          ))}
+          <button onClick={addKelas} style={{ padding: '12px', background: '#f1f5f9', color: '#475569', border: '2px dashed #cbd5e1', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+            + Tambah Kelas Lomba
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: 14, background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Batal</button>
+          <button onClick={handleSave} disabled={loading} style={{ flex: 2, padding: 14, background: 'linear-gradient(135deg,#16a34a,#15803d)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer' }}>
+            {loading ? '⏳ Menyimpan...' : '💾 Simpan Daftar Juara'}
+          </button>
+        </div>
+      </div>
+    </>
   )
 }
