@@ -382,7 +382,6 @@ function SubscribeModal({onClose,onSaved}:{onClose:()=>void,onSaved:()=>void}) {
   }
 
   return (
-  return (
     <>
       <div className="modal-overlay animate-fade-in" onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.5)',backdropFilter:'blur(4px)',zIndex:50}}/>
       <div className="modal-content animate-slide-up" style={{position:'fixed',bottom:0,left:0,right:0,background:'var(--bg-primary)',borderRadius:'24px 24px 0 0',zIndex:51,maxHeight:'85vh',overflowY:'auto',boxShadow:'var(--shadow)'}}>

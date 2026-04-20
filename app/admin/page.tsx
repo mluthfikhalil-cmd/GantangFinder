@@ -466,63 +466,6 @@ export default function AdminPage() {
                 <h2 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: 0 }}>📱 Subscriber WhatsApp</h2>
                 <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>{subs.length} nomor terdaftar</p>
               </div>
-            </div>
-            <div style={{ overflowX: 'auto', margin: '-20px -20px 0', padding: '20px' }}>
-              <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse', fontSize: 14 }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                    <th style={{ padding: '12px', textAlign: 'left', color: '#64748b', fontWeight: 600 }}>Nomor WA</th>
-                    <th style={{ padding: '12px', textAlign: 'left', color: '#64748b', fontWeight: 600 }}>Kota</th>
-                    <th style={{ padding: '12px', textAlign: 'left', color: '#64748b', fontWeight: 600 }}>Minat Lomba</th>
-                    <th style={{ padding: '12px', textAlign: 'left', color: '#64748b', fontWeight: 600 }}>Tanggal Daftar</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subs.map(sub => (
-                    <tr key={sub.id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                      <td style={{ padding: '10px 12px', fontWeight: 600, color: '#0f172a' }}>{sub.nomor_wa}</td>
-                      <td style={{ padding: '10px 12px', color: '#64748b' }}>{sub.kota || 'Semua Kota'}</td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          {sub.minat?.map(m => (
-                            <span key={m} style={{ background: m === 'merpati' ? '#eff6ff' : '#f0fdf4', color: m === 'merpati' ? '#1d4ed8' : '#15803d', padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600 }}>
-                              {m === 'merpati' ? 'Merpati' : 'Kicau'}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td style={{ padding: '10px 12px', color: '#94a3b8', fontSize: 12 }}>
-                        {new Date(sub.created_at).toLocaleDateString('id-ID')}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Poster Modal */}
-      {posterHtml && (
-        <div className="modal-overlay animate-fade-in" style={{position:'fixed',inset:0,background:'rgba(0,0,0,.8)',zIndex:100,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:20}}>
-          <div className="modal-content animate-slide-up" style={{background:'#fff',borderRadius:16,width:'100%',maxWidth:640,maxHeight:'80vh',overflow:'hidden',display:'flex',flexDirection:'column'}}>
-            <div style={{padding:'16px 20px',borderBottom:'1px solid #e2e8f0',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-              <h3 style={{margin:0,fontSize:16,fontWeight:700}}>🎨 Hasil Poster AI: {posterHtml.ev.nama_event}</h3>
-              <button onClick={()=>setPosterHtml(null)} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:'#64748b'}}>×</button>
-            </div>
-            <div style={{flex:1,overflow:'auto',padding:20,background:'#f1f5f9',display:'flex',justifyContent:'center'}}>
-              <div style={{transformOrigin:'top center',transform:'scale(0.8)'}} dangerouslySetInnerHTML={{__html: posterHtml.html}} />
-            </div>
-            <div style={{padding:'16px 20px',borderTop:'1px solid #e2e8f0',display:'flex',gap:12}}>
-              <button onClick={()=>downloadPoster(posterHtml.html, posterHtml.ev.nama_event)} style={{flex:1,padding:'12px',background:'#1d4ed8',color:'#fff',border:'none',borderRadius:10,fontWeight:700,cursor:'pointer'}}>
-                💾 Download HTML (Buka di Chrome → Save PDF)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-              </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={loadData} style={{ padding: '7px 12px', background: '#f1f5f9', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', color: '#64748b' }}>🔄</button>
                 {subs.length > 0 && (
@@ -577,6 +520,26 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      {/* Poster Modal */}
+      {posterHtml && (
+        <div className="modal-overlay animate-fade-in" style={{position:'fixed',inset:0,background:'rgba(0,0,0,.8)',zIndex:100,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div className="modal-content animate-slide-up" style={{background:'#fff',borderRadius:16,width:'100%',maxWidth:640,maxHeight:'80vh',overflow:'hidden',display:'flex',flexDirection:'column'}}>
+            <div style={{padding:'16px 20px',borderBottom:'1px solid #e2e8f0',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <h3 style={{margin:0,fontSize:16,fontWeight:700}}>🎨 Hasil Poster AI: {posterHtml.ev.nama_event}</h3>
+              <button onClick={()=>setPosterHtml(null)} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:'#64748b'}}>×</button>
+            </div>
+            <div style={{flex:1,overflow:'auto',padding:20,background:'#f1f5f9',display:'flex',justifyContent:'center'}}>
+              <div style={{transformOrigin:'top center',transform:'scale(0.8)'}} dangerouslySetInnerHTML={{__html: posterHtml.html}} />
+            </div>
+            <div style={{padding:'16px 20px',borderTop:'1px solid #e2e8f0',display:'flex',gap:12}}>
+              <button onClick={()=>downloadPoster(posterHtml.html, posterHtml.ev.nama_event)} style={{flex:1,padding:'12px',background:'#1d4ed8',color:'#fff',border:'none',borderRadius:10,fontWeight:700,cursor:'pointer'}}>
+                💾 Download HTML (Buka di Chrome → Save PDF)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Modal */}
       {editEv && (
