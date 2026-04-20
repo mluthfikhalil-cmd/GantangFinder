@@ -1,5 +1,405 @@
-import EventsPage from './components/EventsPage'
+'use client'
+import { useState, useEffect } from 'react'
+
+const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
+const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
+
+interface Ev {
+  id: string; nama_event: string; penyelenggara: string; lokasi?: string; kota: string
+  tanggal?: string|null; jenis_burung?: string[]; is_featured?: boolean
+  level_event?: string|null; aturan_sangkar?: string|null; jenis_lomba?: string
+  kategori_merpati?: string|null; jarak_meter?: number|null; kategori_kelas?: string|null
+  kontak?: string|null; biaya_daftar?: number|null
+  featured_until?: string|null; featured_package?: string|null
+  foto_hasil?: string|null
+}
+
+const LC: Record<string,{bg:string;color:string;border:string}> = {
+  Latber:{bg:'#f0fdf4',color:'#15803d',border:'#86efac'},
+  Latpres:{bg:'#eff6ff',color:'#1d4ed8',border:'#93c5fd'},
+  Regional:{bg:'#fef3c7',color:'#b45309',border:'#fcd34d'},
+  Nasional:{bg:'#fdf4ff',color:'#a21caf',border:'#e879f9'},
+}
+const MC: Record<string,{bg:string;color:string}> = {
+  sprint:{bg:'#eff6ff',color:'#1d4ed8'}, kolong:{bg:'#f0fdf4',color:'#15803d'},
+  pos:{bg:'#fef3c7',color:'#b45309'}, 'tinggi bebas':{bg:'#fdf4ff',color:'#7c3aed'},
+}
+
+function days(t?:string|null){if(!t)return null;return Math.ceil((new Date(t+'T00:00:00').getTime()-new Date().setHours(0,0,0,0))/86400000)}
+function fmt(t?:string|null){if(!t)return null;return new Date(t+'T00:00:00').toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+function fmtJarak(m?:number|null){if(!m)return null;return m>=5000?`${(m/1000).toFixed(0)} km`:`${m} m`}
+function fmtWA(k?:string|null){if(!k)return '';const n=k.replace(/\D/g,'');return n.startsWith('0')?'62'+n.slice(1):n}
+function waLink(kontak:string|null|undefined,nama:string){const n=fmtWA(kontak);const msg=encodeURIComponent(`Halo, saya mau daftar lomba ${nama} yang saya lihat di GantangFinder. Apakah pendaftaran masih dibuka?`);return n?`https://wa.me/${n}?text=${msg}`:`https://wa.me/?text=${encodeURIComponent(`Saya tertarik dengan lomba ${nama}`)}`}
 
 export default function Home() {
-  return <EventsPage />
+  const [evs, setEvs] = useState<Ev[]>([])
+  const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState('')
+  const [tab, setTab] = useState<'kicau'|'merpati'>('kicau')
+  const [search, setSearch] = useState('')
+  const [kota, setKota] = useState('')
+  const [level, setLevel] = useState('')
+  const [katMer, setKatMer] = useState('')
+  const [kelas, setKelas] = useState('')
+  const [modal, setModal] = useState(false)
+  const [subModal, setSubModal] = useState(false)
+  const [toast, setToast] = useState('')
+
+  useEffect(() => {
+    if (!SB_URL || !SB_KEY) { setErr('Env vars tidak ditemukan'); setLoading(false); return }
+    fetch(`${SB_URL}/rest/v1/events?select=*&order=is_featured.desc,tanggal.asc`, { headers: H })
+      .then(r => r.json()).then(d => { setEvs(Array.isArray(d) ? d : []); setLoading(false) })
+      .catch(e => { setErr(String(e)); setLoading(false) })
+  }, [])
+
+  const list = evs.filter(e => {
+    const jl = e.jenis_lomba ?? 'kicau'
+    if (jl !== tab) return false
+    if (search && !e.nama_event?.toLowerCase().includes(search.toLowerCase())) return false
+    if (kota && !e.kota?.toLowerCase().includes(kota.toLowerCase())) return false
+    if (tab==='kicau' && level && e.level_event !== level) return false
+    if (tab==='merpati' && katMer && e.kategori_merpati !== katMer) return false
+    if (tab==='merpati' && kelas && e.kategori_kelas !== kelas) return false
+    return true
+  })
+  const now = new Date()
+  const isActiveFeatured = (e: Ev) => e.is_featured && (!e.featured_until || new Date(e.featured_until) > now)
+  const featured = list.filter(e => isActiveFeatured(e))
+  const regular = list.filter(e => !isActiveFeatured(e))
+
+  const btn = (active:boolean, label:string, onClick:()=>void, color='#0f172a') => (
+    <button onClick={onClick} style={{padding:'5px 14px',borderRadius:9999,fontSize:12,fontWeight:700,fontFamily:'inherit',cursor:'pointer',flexShrink:0,border:`1.5px solid ${active?color:'#e2e8f0'}`,background:active?color:'#fff',color:active?'#fff':'#64748b'}}>{label}</button>
+  )
+
+  return (
+    <div style={{minHeight:'100vh',background:'#f0fdf4',paddingBottom:100}}>
+      {/* Hero */}
+      <header style={{background:'linear-gradient(135deg,#14532d,#16a34a)',padding:'28px 20px 20px'}}>
+        <div style={{maxWidth:640,margin:'0 auto'}}>
+          <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
+            <div style={{width:44,height:44,borderRadius:12,background:'rgba(255,255,255,.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22}}>{tab==='kicau'?'🐦':'🕊️'}</div>
+            <div>
+              <h1 style={{color:'#fff',fontSize:24,fontWeight:800,margin:0}}>GantangFinder</h1>
+              <p style={{color:'rgba(255,255,255,.8)',fontSize:13,margin:0}}>{tab==='kicau'?'Lomba Burung Kicau':'Lomba Merpati / Dara'} se-Indonesia</p>
+            </div>
+          </div>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:16}}>
+            {[{v:list.length,l:'Total Event',c:'#fff'},{v:list.filter(e=>e.is_featured).length,l:'Featured',c:'#fbbf24'},{v:list.filter(e=>{const d=days(e.tanggal);return d!==null&&d>=0&&d<=30}).length,l:'Bulan Ini',c:'#86efac'}].map(s=>(
+              <div key={s.l} style={{background:'rgba(255,255,255,.12)',borderRadius:10,padding:'8px 14px'}}>
+                <div style={{color:s.c,fontSize:20,fontWeight:800}}>{loading?'—':s.v}</div>
+                <div style={{color:'rgba(255,255,255,.7)',fontSize:11}}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+          {/* Tab Toggle */}
+          <div style={{display:'flex',gap:8}}>
+            {(['kicau','merpati'] as const).map(t=>(
+              <button key={t} onClick={()=>{setTab(t);setLevel('');setKatMer('');setKelas('')}} style={{padding:'10px 20px',borderRadius:10,fontSize:14,fontWeight:700,fontFamily:'inherit',cursor:'pointer',border:'none',background:tab===t?'#fff':' rgba(255,255,255,.15)',color:tab===t?'#14532d':'#fff',flex:1,transition:'all .2s'}}>
+                {t==='kicau'?'🐦 Lomba Kicau':'🕊️ Merpati / Dara'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      {/* Filter Bar */}
+      <div style={{background:'#fff',borderBottom:'1px solid #f1f5f9',padding:'12px 16px',position:'sticky',top:0,zIndex:30,boxShadow:'0 2px 8px rgba(0,0,0,.06)'}}>
+        <div style={{maxWidth:640,margin:'0 auto',display:'flex',flexDirection:'column',gap:8}}>
+          <div style={{display:'flex',gap:8}}>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Cari nama event..." style={{flex:1,padding:'9px 12px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
+            <input value={kota} onChange={e=>setKota(e.target.value)} placeholder="📍 Kota..." style={{flex:1,padding:'9px 12px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
+          </div>
+          {tab==='kicau' && (
+            <div style={{display:'flex',gap:6,overflowX:'auto'}}>
+              {['','Latber','Latpres','Regional','Nasional'].map(l=>btn(level===l,l||'Semua',()=>setLevel(l)))}
+            </div>
+          )}
+          {tab==='merpati' && (
+            <>
+              <div style={{display:'flex',gap:6,overflowX:'auto'}}>
+                {['','sprint','kolong','pos','tinggi bebas'].map(k=>btn(katMer===k,k?k.charAt(0).toUpperCase()+k.slice(1):'Semua Kategori',()=>setKatMer(k),'#1d4ed8'))}
+              </div>
+              <div style={{display:'flex',gap:6,overflowX:'auto'}}>
+                {['','Junior','Utama','Galatama'].map(k=>btn(kelas===k,k||'Semua Kelas',()=>setKelas(k),'#7c3aed'))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      <main style={{maxWidth:640,margin:'0 auto',padding:16}}>
+        {err && <div style={{padding:12,background:'#fef2f2',border:'1px solid #fecaca',borderRadius:10,color:'#b91c1c',fontSize:13,marginBottom:16}}>⚠️ {err}</div>}
+        {/* Subscriber Banner */}
+        <div style={{background:'linear-gradient(135deg,#eff6ff,#dbeafe)',borderRadius:16,padding:'16px 18px',border:'1.5px solid #bfdbfe',marginBottom:20,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
+          <div style={{flex:1}}>
+            <p style={{fontSize:14,fontWeight:700,color:'#1d4ed8',margin:0}}>🔔 Jangan lewatkan lomba di kotamu!</p>
+            <p style={{fontSize:12,color:'#3b82f6',marginTop:2,marginBottom:0}}>Daftar gratis, dapat notif WhatsApp tiap ada event baru.</p>
+          </div>
+          <button onClick={()=>setSubModal(true)} style={{background:'#1d4ed8',color:'#fff',border:'none',borderRadius:10,padding:'9px 16px',fontSize:13,fontWeight:700,fontFamily:'inherit',cursor:'pointer',flexShrink:0}}>Daftar</button>
+        </div>
+        {loading ? (
+          <div style={{textAlign:'center',padding:'60px 20px'}}>
+            <div style={{fontSize:40}}>{tab==='kicau'?'🐦':'🕊️'}</div>
+            <p style={{color:'#64748b',marginTop:8}}>Memuat event...</p>
+          </div>
+        ) : list.length===0 ? (
+          <div style={{textAlign:'center',padding:'60px 20px'}}>
+            <div style={{fontSize:48}}>🔍</div>
+            <h2 style={{color:'#0f172a',marginTop:12}}>Belum ada event</h2>
+            <p style={{color:'#64748b'}}>Jadilah yang pertama menambahkan event!</p>
+          </div>
+        ) : (
+          <>
+            {featured.length>0 && <section style={{marginBottom:24}}>
+              <h2 style={{fontSize:15,fontWeight:700,color:'#92400e',marginBottom:10}}>⭐ Featured Event</h2>
+              {featured.map(e=><Card key={e.id} ev={e} tab={tab}/>)}
+            </section>}
+            {regular.length>0 && <section>
+              <h2 style={{fontSize:15,fontWeight:700,color:'#0f172a',marginBottom:10}}>📅 Semua Event ({regular.length})</h2>
+              {regular.map(e=><Card key={e.id} ev={e} tab={tab}/>)}
+            </section>}
+          </>
+        )}
+      </main>
+
+      {/* FAB */}
+      <button onClick={()=>setModal(true)} style={{position:'fixed',bottom:24,right:24,display:'flex',alignItems:'center',gap:8,background:'linear-gradient(135deg,#16a34a,#15803d)',color:'#fff',border:'none',borderRadius:9999,padding:'14px 22px',fontSize:15,fontWeight:700,fontFamily:'inherit',cursor:'pointer',boxShadow:'0 8px 24px rgba(22,163,74,.4)',zIndex:40}}>
+        + Tambah Event
+      </button>
+
+      {modal && <AddModal tab={tab} onClose={()=>setModal(false)} onSaved={ev=>{setEvs(p=>[ev,...p]);setModal(false)}}/>}
+      {subModal && <SubscribeModal onClose={()=>setSubModal(false)} onSaved={()=>{setSubModal(false);setToast('✅ Berhasil! Kamu akan dapat info lomba terbaru.');setTimeout(()=>setToast(''),4000)}}/>}
+      {toast && <div style={{position:'fixed',bottom:90,left:'50%',transform:'translateX(-50%)',background:'#0f172a',color:'#fff',padding:'12px 20px',borderRadius:12,fontSize:14,fontWeight:600,zIndex:60,whiteSpace:'nowrap',boxShadow:'0 4px 20px rgba(0,0,0,.3)'}}>{toast}</div>}
+
+      {/* Footer & Admin Link */}
+      <footer style={{textAlign:'center',padding:'40px 20px',background:'#f0fdf4',borderTop:'1px solid #dcfce7'}}>
+        <p style={{fontSize:13,color:'#64748b',margin:0}}>© 2026 GantangFinder — Komunitas Burung Indonesia</p>
+        <div style={{marginTop:12,display:'flex',justifyContent:'center',gap:16}}>
+          <a href="/admin" style={{fontSize:11,color:'#94a3b8',textDecoration:'none',opacity:.5}}>⚙️ Admin Area</a>
+        </div>
+      </footer>
+    </div>
+  )
+}
+
+function Card({ev,tab}:{ev:Ev,tab:string}) {
+  const d = days(ev.tanggal)
+  const lc = ev.level_event && LC[ev.level_event]
+  const mc = ev.kategori_merpati && MC[ev.kategori_merpati]
+  const cardBody = (
+    <div style={{background:ev.is_featured?'#fffbeb':'#fff',borderRadius:16,padding:16,border:ev.is_featured?'1.5px solid #fde68a':'1.5px solid #f1f5f9',boxShadow:'0 2px 8px rgba(0,0,0,.05)'}}>
+      <div style={{display:'flex',gap:6,marginBottom:8,flexWrap:'wrap'}}>
+        {ev.is_featured && <span style={{background:'linear-gradient(135deg,#f59e0b,#fbbf24)',color:'#fff',fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:9999}}>⭐ FEATURED</span>}
+        {ev.foto_hasil && <span style={{background:'#eff6ff',color:'#1d4ed8',border:'1px solid #93c5fd',fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:9999}}>📸 HASIL TERSEDIA</span>}
+        {lc && <span style={{background:lc.bg,color:lc.color,border:`1px solid ${lc.border}`,fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:9999}}>{ev.level_event}</span>}
+        {mc && <span style={{background:mc.bg,color:mc.color,fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:9999,border:`1px solid ${mc.color}22`}}>{(ev.kategori_merpati??'').charAt(0).toUpperCase()+(ev.kategori_merpati??'').slice(1)}</span>}
+        {d!==null && d>=0 && d<=7 && <span style={{background:'#fef2f2',color:'#dc2626',fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:9999}}>🔥 {d===0?'HARI INI':`${d} HARI LAGI`}</span>}
+        {d!==null && d<0 && <span style={{background:'#f1f5f9',color:'#94a3b8',fontSize:11,padding:'3px 10px',borderRadius:9999}}>Selesai</span>}
+      </div>
+      <h3 style={{fontSize:16,fontWeight:700,color:'#0f172a',marginBottom:4}}>{ev.nama_event}</h3>
+      <p style={{fontSize:13,color:'#64748b',marginBottom:4}}>oleh <strong>{ev.penyelenggara}</strong></p>
+      <p style={{fontSize:13,color:'#64748b',marginBottom:ev.tanggal?4:8}}>📍 {ev.lokasi?`${ev.lokasi}, `:''}{ ev.kota}</p>
+      {ev.tanggal && <p style={{fontSize:13,color:'#64748b',marginBottom:8}}>📅 {fmt(ev.tanggal)}</p>}
+      {tab==='merpati' && (ev.jarak_meter||ev.kategori_kelas) && (
+        <p style={{fontSize:13,color:'#1d4ed8',fontWeight:600,marginBottom:8}}>
+          🏁 {[ev.kategori_merpati?ev.kategori_merpati.charAt(0).toUpperCase()+ev.kategori_merpati.slice(1):null, fmtJarak(ev.jarak_meter), ev.kategori_kelas?`Kelas ${ev.kategori_kelas}`:null].filter(Boolean).join(' · ')}
+        </p>
+      )}
+      {tab==='kicau' && ev.aturan_sangkar && <p style={{fontSize:12,color:'#64748b',marginBottom:8}}>🏮 Sangkar: <strong>{ev.aturan_sangkar}</strong></p>}
+      {ev.jenis_burung && ev.jenis_burung.length>0 && (
+        <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:10}}>
+          {ev.jenis_burung.map(b=><span key={b} style={{background:'#f0fdf4',color:'#15803d',fontSize:11,fontWeight:600,padding:'3px 10px',borderRadius:9999,border:'1px solid #bbf7d0'}}>{b}</span>)}
+        </div>
+      )}
+    </div>
+  )
+  return (
+    <div style={{marginBottom:12}}>
+      <a href={`/events/${ev.id}`} style={{display:'block',textDecoration:'none',marginBottom:8}}>{cardBody}</a>
+      <a href={waLink(ev.kontak,ev.nama_event)} target="_blank" rel="noopener noreferrer"
+        style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,width:'100%',padding:'10px 0',background:'#25D366',color:'#fff',borderRadius:10,fontSize:13,fontWeight:600,textDecoration:'none',boxSizing:'border-box'}}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+        {ev.kontak ? 'Daftar via WhatsApp' : 'Hubungi Panitia'}
+      </a>
+    </div>
+  )
+}
+
+const BIRDS=['Murai Batu','Kacer','Cucak Rowo','Cendet','Kenari','Lovebird','Cucak Hijau','Anis Merah','Pleci','Kolibri','Trucukan','Prenjak','Tledekan','Jalak Suren','Jalak Bali']
+const BIRDS_MER=['Merpati Balap','Merpati Kolong','Merpati Pos','Merpati Tinggian']
+const SANGKAR=['Bebas','Standar Panitia','Wajib Merek Tertentu']
+
+function AddModal({tab,onClose,onSaved}:{tab:string,onClose:()=>void,onSaved:(e:Ev)=>void}) {
+  const [loading,setLoading]=useState(false)
+  const [err,setErr]=useState('')
+  const [birds,setBirds]=useState<string[]>([])
+  const [featured,setFeatured]=useState(false)
+
+  async function submit(e:React.FormEvent<HTMLFormElement>) {
+    e.preventDefault(); setLoading(true); setErr('')
+    const f=e.currentTarget
+    const g=(n:string)=>(f.elements.namedItem(n) as HTMLInputElement)?.value?.trim()||''
+    const body:Record<string,unknown>={
+      nama_event:g('nama'),penyelenggara:g('penyelenggara'),lokasi:g('lokasi'),kota:g('kota'),
+      tanggal:g('tanggal')||null,jenis_burung:birds,is_featured:featured,jenis_lomba:tab,
+      kontak:g('kontak')||null,
+    }
+    if(tab==='kicau'){body.level_event=g('level')||null;body.aturan_sangkar=g('sangkar')||null}
+    if(tab==='merpati'){body.kategori_merpati=g('kat_mer')||null;body.jarak_meter=g('jarak')?parseInt(g('jarak')):null;body.kategori_kelas=g('kelas')||null}
+    if(!body.nama_event||!body.penyelenggara||!body.kota){setErr('Nama, penyelenggara, dan kota wajib.');setLoading(false);return}
+    try {
+      const res=await fetch(`${SB_URL}/rest/v1/events`,{method:'POST',headers:{...H,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(body)})
+      const data=await res.json()
+      if(!res.ok) throw new Error(data?.message||`HTTP ${res.status}`)
+      onSaved(Array.isArray(data)?data[0]:data)
+    } catch(ex:unknown){setErr(ex instanceof Error?ex.message:'Gagal menyimpan.')}
+    setLoading(false)
+  }
+
+  const inp=(name:string,label:string,placeholder:string,type='text')=>(
+    <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>{label}</label>
+    <input name={name} type={type} placeholder={placeholder} style={{width:'100%',padding:'11px 14px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:14,fontFamily:'inherit',outline:'none'}}/></div>
+  )
+
+  const birdList = tab==='merpati' ? BIRDS_MER : BIRDS
+
+  return (
+    <>
+      <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.5)',backdropFilter:'blur(4px)',zIndex:50}}/>
+      <div style={{position:'fixed',bottom:0,left:0,right:0,background:'#fff',borderRadius:'24px 24px 0 0',zIndex:51,maxHeight:'90vh',overflowY:'auto',boxShadow:'0 -8px 40px rgba(0,0,0,.15)'}}>
+        <div style={{display:'flex',justifyContent:'center',padding:'12px 0 0'}}><div style={{width:40,height:4,background:'#e2e8f0',borderRadius:2}}/></div>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 24px 0'}}>
+          <h2 style={{fontSize:18,fontWeight:800,color:'#0f172a'}}>{tab==='kicau'?'🐦':'🕊️'} Tambah {tab==='kicau'?'Event Kicau':'Event Merpati'}</h2>
+          <button onClick={onClose} style={{background:'#f1f5f9',border:'none',borderRadius:'50%',width:36,height:36,cursor:'pointer',fontSize:18}}>✕</button>
+        </div>
+        <form onSubmit={submit} style={{padding:'20px 24px 40px',display:'flex',flexDirection:'column',gap:14}}>
+          {inp('nama','Nama Event *','cth: Kejuaraan Merpati Sprint 2026')}
+          {inp('penyelenggara','Penyelenggara *','cth: PPMBSI Madiun')}
+          {inp('lokasi','Lokasi / Venue','cth: Lapangan Peceland')}
+          {inp('kota','Kota *','cth: Madiun')}
+          {inp('tanggal','Tanggal','','date')}
+
+          {tab==='kicau' && <>
+            <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Level Event</label>
+              <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                {['Latber','Latpres','Regional','Nasional'].map(l=>{const lc=LC[l];return(
+                  <label key={l} style={{cursor:'pointer'}}><input type="radio" name="level" value={l} style={{display:'none'}}/>
+                  <span style={{padding:'6px 14px',borderRadius:9999,fontSize:13,fontWeight:600,border:`1.5px solid ${lc.border}`,background:lc.bg,color:lc.color,display:'inline-block'}}>{l}</span></label>
+                )})}
+              </div>
+            </div>
+            <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Aturan Sangkar</label>
+              <select name="sangkar" style={{width:'100%',padding:'11px 14px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:14,fontFamily:'inherit',outline:'none'}}>
+                <option value="">-- Pilih --</option>
+                {SANGKAR.map(s=><option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </>}
+
+          {tab==='merpati' && <>
+            <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Kategori Lomba</label>
+              <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                {['sprint','kolong','pos','tinggi bebas'].map(k=>{const mc=MC[k];return(
+                  <label key={k} style={{cursor:'pointer'}}><input type="radio" name="kat_mer" value={k} style={{display:'none'}}/>
+                  <span style={{padding:'6px 14px',borderRadius:9999,fontSize:13,fontWeight:600,border:`1.5px solid ${mc.color}44`,background:mc.bg,color:mc.color,display:'inline-block'}}>{k.charAt(0).toUpperCase()+k.slice(1)}</span></label>
+                )})}
+              </div>
+            </div>
+            {inp('jarak','Jarak (meter)','cth: 500','number')}
+            <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Kelas</label>
+              <div style={{display:'flex',gap:8}}>
+                {['Junior','Utama','Galatama'].map(k=>(
+                  <label key={k} style={{cursor:'pointer'}}><input type="radio" name="kelas" value={k} style={{display:'none'}}/>
+                  <span style={{padding:'6px 14px',borderRadius:9999,fontSize:13,fontWeight:600,border:'1.5px solid #c4b5fd',background:'#fdf4ff',color:'#7c3aed',display:'inline-block'}}>{k}</span></label>
+                ))}
+              </div>
+            </div>
+          </>}
+
+          <div><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Kelas Burung</label>
+            <div style={{display:'flex',flexWrap:'wrap',gap:8,padding:12,background:'#f8fafc',borderRadius:10,border:'1.5px solid #e2e8f0'}}>
+              {birdList.map(b=><button key={b} type="button" onClick={()=>setBirds(p=>p.includes(b)?p.filter(x=>x!==b):[...p,b])} style={{padding:'5px 12px',borderRadius:9999,fontSize:12,fontWeight:600,fontFamily:'inherit',cursor:'pointer',border:birds.includes(b)?'1.5px solid #16a34a':'1.5px solid #e2e8f0',background:birds.includes(b)?'#dcfce7':'#fff',color:birds.includes(b)?'#15803d':'#64748b'}}>{b}</button>)}
+            </div>
+            {birds.length>0 && <p style={{fontSize:12,color:'#16a34a',marginTop:6}}>✓ {birds.length} kelas dipilih</p>}
+          </div>
+
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px',background:'#fef3c7',borderRadius:10,border:'1.5px solid #fde68a'}}>
+            <div><p style={{fontSize:14,fontWeight:700,color:'#92400e'}}>⭐ Featured</p><p style={{fontSize:12,color:'#b45309'}}>Tampil di bagian teratas</p></div>
+            <button type="button" onClick={()=>setFeatured(f=>!f)} style={{width:48,height:26,borderRadius:13,border:'none',cursor:'pointer',background:featured?'#16a34a':'#d1d5db',position:'relative',flexShrink:0}}>
+              <span style={{position:'absolute',top:3,left:featured?24:3,width:20,height:20,background:'#fff',borderRadius:'50%',transition:'left .3s',boxShadow:'0 1px 4px rgba(0,0,0,.2)'}}/>
+            </button>
+          </div>
+
+          {err && <div style={{padding:12,background:'#fef2f2',border:'1px solid #fecaca',borderRadius:10,color:'#b91c1c',fontSize:13}}>⚠️ {err}</div>}
+          <button type="submit" disabled={loading} style={{width:'100%',padding:15,background:loading?'#86efac':'linear-gradient(135deg,#16a34a,#15803d)',color:'#fff',border:'none',borderRadius:12,fontSize:15,fontWeight:700,fontFamily:'inherit',cursor:loading?'not-allowed':'pointer'}}>
+            {loading?'⏳ Menyimpan...':'🏆 Tambah Event'}
+          </button>
+        </form>
+      </div>
+    </>
+  )
+}
+
+function SubscribeModal({onClose,onSaved}:{onClose:()=>void,onSaved:()=>void}) {
+  const [loading,setLoading]=useState(false)
+  const [err,setErr]=useState('')
+  const [minat,setMinat]=useState<string[]>(['kicau'])
+
+  async function submit(e:React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();setLoading(true);setErr('')
+    const f=e.currentTarget
+    const g=(n:string)=>(f.elements.namedItem(n) as HTMLInputElement)?.value?.trim()||''
+    const raw=g('wa').replace(/\D/g,'')
+    const wa=raw.startsWith('0')?'62'+raw.slice(1):raw
+    if(!wa||wa.length<10){setErr('Nomor WhatsApp tidak valid (min 10 digit).');setLoading(false);return}
+    if(minat.length===0){setErr('Pilih minimal satu minat.');setLoading(false);return}
+    try {
+      const res=await fetch(`${SB_URL}/rest/v1/subscribers`,{method:'POST',headers:{...H,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({nama:g('nama')||null,nomor_wa:wa,kota:g('kota')||null,minat})})
+      if(res.status===409)throw new Error('Nomor ini sudah terdaftar sebelumnya.')
+      if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d?.message||`HTTP ${res.status}`)}
+      onSaved()
+    } catch(ex:unknown){setErr(ex instanceof Error?ex.message:'Gagal mendaftar. Coba lagi.')}
+    setLoading(false)
+  }
+
+  return (
+    <>
+      <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.5)',backdropFilter:'blur(4px)',zIndex:50}}/>
+      <div style={{position:'fixed',bottom:0,left:0,right:0,background:'#fff',borderRadius:'24px 24px 0 0',zIndex:51,maxHeight:'85vh',overflowY:'auto',boxShadow:'0 -8px 40px rgba(0,0,0,.15)'}}>
+        <div style={{display:'flex',justifyContent:'center',padding:'12px 0 0'}}><div style={{width:40,height:4,background:'#e2e8f0',borderRadius:2}}/></div>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 24px 0'}}>
+          <h2 style={{fontSize:18,fontWeight:800,color:'#0f172a'}}>🔔 Info Lomba via WhatsApp</h2>
+          <button onClick={onClose} style={{background:'#f1f5f9',border:'none',borderRadius:'50%',width:36,height:36,cursor:'pointer',fontSize:18}}>✕</button>
+        </div>
+        <p style={{fontSize:13,color:'#64748b',padding:'8px 24px 0'}}>Daftarkan nomor WA-mu dan kami akan info kalau ada lomba baru di kotamu. Gratis!</p>
+        <form onSubmit={submit} style={{padding:'16px 24px 40px',display:'flex',flexDirection:'column',gap:14}}>
+          {[['nama','Nama (opsional)','cth: Ahmad'],['wa','Nomor WhatsApp *','cth: 08123456789']].map(([n,l,p])=>(
+            <div key={n}><label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>{l}</label>
+            <input name={n} placeholder={p} style={{width:'100%',padding:'11px 14px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:14,fontFamily:'inherit',outline:'none'}}/></div>
+          ))}
+          <div>
+            <label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Kota (opsional)</label>
+            <input name="kota" placeholder="cth: Surabaya" style={{width:'100%',padding:'11px 14px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:14,fontFamily:'inherit',outline:'none'}}/>
+          </div>
+          <div>
+            <label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:8}}>Minat Lomba *</label>
+            <div style={{display:'flex',gap:10}}>
+              {[['kicau','🐦 Lomba Kicau'],['merpati','🕊️ Merpati/Dara']].map(([v,l])=>(
+                <button key={v} type="button" onClick={()=>setMinat(p=>p.includes(v)?p.filter(x=>x!==v):[...p,v])}
+                  style={{flex:1,padding:'12px 8px',borderRadius:10,fontSize:13,fontWeight:600,fontFamily:'inherit',cursor:'pointer',border:minat.includes(v)?'2px solid #16a34a':'1.5px solid #e2e8f0',background:minat.includes(v)?'#dcfce7':'#fff',color:minat.includes(v)?'#15803d':'#64748b'}}>
+                  {l}{minat.includes(v)?' ✓':''}
+                </button>
+              ))}
+            </div>
+          </div>
+          {err && <div style={{padding:12,background:'#fef2f2',border:'1px solid #fecaca',borderRadius:10,color:'#b91c1c',fontSize:13}}>⚠️ {err}</div>}
+          <button type="submit" disabled={loading} style={{width:'100%',padding:15,background:loading?'#86efac':'linear-gradient(135deg,#1d4ed8,#2563eb)',color:'#fff',border:'none',borderRadius:12,fontSize:15,fontWeight:700,fontFamily:'inherit',cursor:loading?'not-allowed':'pointer'}}>
+            {loading?'⏳ Mendaftarkan...':'📲 Daftarkan Saya'}
+          </button>
+        </form>
+      </div>
+    </>
+  )
 }

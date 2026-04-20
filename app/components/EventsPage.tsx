@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../../lib/supabase'
+import { dbFetchEvents } from '../../lib/supabase'
 import EventCard from './EventCard'
 import AddEventModal from './AddEventModal'
 import WatchlistModal, { Watchlist } from './WatchlistModal'
@@ -65,9 +65,7 @@ export default function EventsPage() {
   const fetchEvents = useCallback(async () => {
     setLoading(true)
     try {
-      if (!supabase) { setLoading(false); return }
-      const { data } = await supabase.from('events').select('*').order('is_featured', { ascending: false }).order('tanggal', { ascending: true })
-      const evs = data ?? []
+      const evs = await dbFetchEvents()
       setEvents(evs)
       // Check reminders & watchlist
       const wl = JSON.parse(localStorage.getItem('gf_watchlist') || '{}') as Watchlist

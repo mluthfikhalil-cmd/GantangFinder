@@ -21,6 +21,7 @@ export interface Event {
   is_featured: boolean
   level_event?: string | null
   aturan_sangkar?: string | null
+  foto_hasil?: string | null
 }
 
 export const LEVEL_COLORS: Record<string, { bg: string; color: string; border: string }> = {

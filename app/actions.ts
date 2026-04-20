@@ -50,3 +50,47 @@ export async function addEvent(formData: FormData) {
     return { error: e instanceof Error ? e.message : 'Terjadi kesalahan.' }
   }
 }
+
+export async function uploadResultImage(eventId: string, file: File) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!url || !key) return { error: 'Konfigurasi database tidak ditemukan.' }
+
+  try {
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(url, key)
+
+    // 1. Upload file ke storage bucket 'results'
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${eventId}-${Math.random().toString(36).substring(2)}.${fileExt}`
+    const filePath = `images/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('results')
+      .upload(filePath, file)
+
+    if (uploadError) return { error: uploadError.message }
+
+    // 2. Dapatkan public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('results')
+      .getPublicUrl(filePath)
+
+    // 3. Update kolom 'foto_hasil' di tabel 'events'
+    // Kita asumsikan kolom ini bertipe TEXT atau JSON (array of strings)
+    // Untuk MVP, kita simpan satu foto dulu.
+    const { error: updateError } = await supabase
+      .from('events')
+      .update({ foto_hasil: publicUrl })
+      .eq('id', eventId)
+
+    if (updateError) return { error: updateError.message }
+
+    revalidatePath('/')
+    revalidatePath(`/events/${eventId}`)
+    return { success: true, url: publicUrl }
+  } catch (e: unknown) {
+    return { error: e instanceof Error ? e.message : 'Terjadi kesalahan.' }
+  }
+}

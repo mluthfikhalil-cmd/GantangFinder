@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
+import { dbInsertEvent } from '../../lib/supabase'
 import { LEVELS, BIRDS } from './types'
 
 const SANGKAR_OPTIONS = [
@@ -60,12 +60,10 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
     setError('')
 
     try {
-      if (!supabase) throw new Error('Konfigurasi database tidak ditemukan.')
-
       const form = e.currentTarget
       const get = (name: string) => (form.elements.namedItem(name) as HTMLInputElement)?.value || ''
 
-      const { error: sbError } = await supabase.from('events').insert({
+      await dbInsertEvent({
         nama_event: get('nama_event'),
         penyelenggara: get('penyelenggara'),
         lokasi: get('lokasi'),
@@ -76,8 +74,6 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
         level_event: get('level_event') || null,
         aturan_sangkar: get('aturan_sangkar') || null,
       })
-
-      if (sbError) throw new Error(sbError.message)
 
       setSuccess(true)
       setTimeout(() => {

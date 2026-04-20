@@ -26,6 +26,7 @@ export default function EventCard({ event, featured = false }: { event: Event; f
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', flex:1 }}>
           {featured && <span style={{ background:'linear-gradient(135deg,#f59e0b,#fbbf24)', color:'#fff', fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:9999 }}>⭐ FEATURED</span>}
+          {event.foto_hasil && <span style={{ background:'#eff6ff', color:'#1d4ed8', border:'1px solid #93c5fd', fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:9999 }}>📸 HASIL</span>}
           {lvlStyle && <span style={{ background:lvlStyle.bg, color:lvlStyle.color, border:`1px solid ${lvlStyle.border}`, fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:9999 }}>{lvl}</span>}
           {isUp && days! <= 7 && <span style={{ background:'#fef2f2', color:'#dc2626', fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:9999 }}>🔥 {days === 0 ? 'HARI INI' : `${days} HARI LAGI`}</span>}
           {days !== null && days < 0 && <span style={{ background:'#f1f5f9', color:'#94a3b8', fontSize:11, fontWeight:600, padding:'3px 10px', borderRadius:9999 }}>Selesai</span>}
