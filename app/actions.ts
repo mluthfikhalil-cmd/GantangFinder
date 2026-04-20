@@ -77,12 +77,28 @@ export async function uploadResultImage(eventId: string, file: File) {
       .from('results')
       .getPublicUrl(filePath)
 
-    // 3. Update kolom 'foto_hasil' di tabel 'events'
-    // Kita asumsikan kolom ini bertipe TEXT atau JSON (array of strings)
-    // Untuk MVP, kita simpan satu foto dulu.
+    // 3. Ambil data lama dulu untuk di-append
+    const { data: currentEv, error: fetchErr } = await supabase
+      .from('events')
+      .select('foto_hasil')
+      .eq('id', eventId)
+      .single()
+
+    if (fetchErr) return { error: fetchErr.message }
+
+    let oldPhotos: string[] = []
+    if (Array.isArray(currentEv?.foto_hasil)) {
+      oldPhotos = currentEv.foto_hasil
+    } else if (currentEv?.foto_hasil && typeof currentEv.foto_hasil === 'string') {
+      oldPhotos = [currentEv.foto_hasil]
+    }
+    
+    const newPhotos = [...oldPhotos, publicUrl]
+
+    // 4. Update kolom 'foto_hasil' di tabel 'events'
     const { error: updateError } = await supabase
       .from('events')
-      .update({ foto_hasil: publicUrl })
+      .update({ foto_hasil: newPhotos })
       .eq('id', eventId)
 
     if (updateError) return { error: updateError.message }
@@ -90,6 +106,52 @@ export async function uploadResultImage(eventId: string, file: File) {
     revalidatePath('/')
     revalidatePath(`/events/${eventId}`)
     return { success: true, url: publicUrl }
+  } catch (e: unknown) {
+    return { error: e instanceof Error ? e.message : 'Terjadi kesalahan.' }
+  }
+}
+
+export async function deleteResultImage(eventId: string, imageUrl: string) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!url || !key) return { error: 'Konfigurasi database tidak ditemukan.' }
+
+  try {
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(url, key)
+
+    // 1. Ambil data foto saat ini
+    const { data: currentEv, error: fetchErr } = await supabase
+      .from('events')
+      .select('foto_hasil')
+      .eq('id', eventId)
+      .single()
+
+    if (fetchErr) return { error: fetchErr.message }
+
+    const oldPhotos = Array.isArray(currentEv?.foto_hasil) ? currentEv.foto_hasil : []
+    const newPhotos = oldPhotos.filter(p => p !== imageUrl)
+
+    // 2. Update database
+    const { error: updateError } = await supabase
+      .from('events')
+      .update({ foto_hasil: newPhotos })
+      .eq('id', eventId)
+
+    if (updateError) return { error: updateError.message }
+
+    // 3. Hapus dari storage (opsional tapi bagus untuk bersih-bersih)
+    // URL format: https://.../storage/v1/object/public/results/images/filename.jpg
+    const pathParts = imageUrl.split('/results/')
+    if (pathParts.length > 1) {
+      const filePath = pathParts[1]
+      await supabase.storage.from('results').remove([filePath])
+    }
+
+    revalidatePath('/')
+    revalidatePath(`/events/${eventId}`)
+    return { success: true }
   } catch (e: unknown) {
     return { error: e instanceof Error ? e.message : 'Terjadi kesalahan.' }
   }

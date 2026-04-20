@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { uploadResultImage } from '../actions'
+import { uploadResultImage, deleteResultImage } from '../actions'
 
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
@@ -10,7 +10,7 @@ const PASS = 'gantang2026'
 interface Ev {
   id: string; nama_event: string; kota: string; tanggal?: string|null
   is_featured?: boolean; featured_until?: string|null; featured_package?: string|null; jenis_lomba?: string
-  penyelenggara?: string; lokasi?: string; foto_hasil?: string|null
+  penyelenggara?: string; lokasi?: string; foto_hasil?: string[]|string|null
 }
 interface Sub {
   id: string; nama?: string|null; nomor_wa: string; kota?: string|null
@@ -37,11 +37,31 @@ export default function AdminPage() {
   const [uploading, setUploading] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'events'|'subscribers'>('events')
   const [editEv, setEditEv] = useState<Ev | null>(null)
+  const [managePhotosEv, setManagePhotosEv] = useState<Ev | null>(null)
 
   function login(e: React.FormEvent) {
     e.preventDefault()
     if (pw === PASS) { setAuth(true) }
     else { setPwErr('Password salah. Coba lagi.') }
+  }
+
+  async function handleDeletePhoto(eventId: string, url: string) {
+    if (!confirm('Yakin mau hapus foto ini?')) return
+    const res = await deleteResultImage(eventId, url)
+    if (res.success) {
+      setEvs(prev => prev.map(e => e.id === eventId ? {
+        ...e,
+        foto_hasil: Array.isArray(e.foto_hasil) ? e.foto_hasil.filter(p => p !== url) : null
+      } : e))
+      if (managePhotosEv?.id === eventId) {
+        setManagePhotosEv(prev => prev ? {
+          ...prev,
+          foto_hasil: Array.isArray(prev.foto_hasil) ? prev.foto_hasil.filter(p => p !== url) : null
+        } : null)
+      }
+    } else {
+      alert('Gagal hapus: ' + res.error)
+    }
   }
 
   useEffect(() => {
@@ -121,18 +141,26 @@ export default function AdminPage() {
     setLoading(false)
   }
 
-  async function handleUpload(eventId: string, file: File) {
-    console.log('Memulai upload untuk event:', eventId);
+  async function handleUpload(eventId: string, files: FileList | null) {
+    if (!files || files.length === 0) return
+    console.log('Memulai upload untuk event:', eventId, 'Jumlah file:', files.length);
     setUploading(eventId)
+    
     try {
-      const res = await uploadResultImage(eventId, file)
-      if (res.success) {
-        setEvs(prev => prev.map(e => e.id === eventId ? { ...e, foto_hasil: res.url } : e))
-        alert('Foto berhasil diupload!')
-      } else {
-        console.error('Upload Error:', res.error);
-        alert('Upload gagal: ' + res.error)
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const res = await uploadResultImage(eventId, file)
+        if (res.success) {
+          setEvs(prev => prev.map(e => e.id === eventId ? { 
+            ...e, 
+            foto_hasil: Array.isArray(e.foto_hasil) ? [...e.foto_hasil, res.url!] : [res.url!] 
+          } : e))
+        } else {
+          console.error('Upload Error:', res.error);
+          alert(`Gagal upload file ke-${i+1}: ` + res.error)
+        }
       }
+      alert('Proses upload selesai!')
     } catch (err) {
       console.error('Fatal Error:', err);
       alert('Terjadi kesalahan sistem saat upload.')
@@ -303,23 +331,28 @@ export default function AdminPage() {
                                     type="file" 
                                     id={`upload-${ev.id}`} 
                                     accept="image/*" 
+                                    multiple
                                     style={{ display: 'none' }} 
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0]
-                                      if (file) handleUpload(ev.id, file)
-                                    }}
+                                    onChange={(e) => handleUpload(ev.id, e.target.files)}
                                   />
                                   <label 
                                     htmlFor={`upload-${ev.id}`}
                                     style={{ 
                                       padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700, 
-                                      background: ev.foto_hasil ? '#dcfce7' : '#fef3c7', 
-                                      color: ev.foto_hasil ? '#15803d' : '#b45309', 
+                                      background: (Array.isArray(ev.foto_hasil) ? ev.foto_hasil.length > 0 : !!ev.foto_hasil) ? '#dcfce7' : '#fef3c7', 
+                                      color: (Array.isArray(ev.foto_hasil) ? ev.foto_hasil.length > 0 : !!ev.foto_hasil) ? '#15803d' : '#b45309', 
                                       cursor: uploading === ev.id ? 'not-allowed' : 'pointer',
                                       display: 'inline-block'
                                     }}>
-                                    {uploading === ev.id ? '⏳' : ev.foto_hasil ? '✅ Foto' : '📷 Hasil'}
+                                    {uploading === ev.id ? '⏳' : (Array.isArray(ev.foto_hasil) ? ev.foto_hasil.length > 0 : !!ev.foto_hasil) ? `✅ ${Array.isArray(ev.foto_hasil) ? ev.foto_hasil.length : 1} Foto` : '📷 Hasil'}
                                   </label>
+                                  {(Array.isArray(ev.foto_hasil) ? ev.foto_hasil.length > 0 : !!ev.foto_hasil) && (
+                                    <button 
+                                      onClick={() => setManagePhotosEv(ev)}
+                                      style={{ padding: '6px 8px', borderRadius: 8, fontSize: 12, fontWeight: 700, background: '#f1f5f9', color: '#64748b', border: 'none', cursor: 'pointer' }}>
+                                      🛠️
+                                    </button>
+                                  )}
                                 </div>
                               )}
                               <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -457,6 +490,40 @@ export default function AdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </>
+      )}
+
+      {/* Manage Photos Modal */}
+      {managePhotosEv && (
+        <>
+          <div onClick={() => setManagePhotosEv(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', backdropFilter: 'blur(4px)', zIndex: 100 }} />
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#fff', borderRadius: 20, width: '90%', maxWidth: 500, zIndex: 101, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', margin: 0 }}>🖼️ Kelola Foto Hasil</h2>
+              <button onClick={() => setManagePhotosEv(null)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#64748b' }}>×</button>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12, maxHeight: 400, overflowY: 'auto', padding: 4 }}>
+              {(Array.isArray(managePhotosEv.foto_hasil) ? managePhotosEv.foto_hasil : managePhotosEv.foto_hasil ? [managePhotosEv.foto_hasil] : []).map((url, i) => (
+                <div key={i} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0', aspectRatio: '1/1' }}>
+                  <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Hasil" />
+                  <button 
+                    onClick={() => handleDeletePhoto(managePhotosEv.id, url)}
+                    style={{ position: 'absolute', top: 5, right: 5, background: 'rgba(220,38,38,0.9)', color: '#fff', border: 'none', borderRadius: '50%', width: 24, height: 24, cursor: 'pointer', fontSize: 14, fontWeight: 'bold' }}>
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            {(!managePhotosEv.foto_hasil || (Array.isArray(managePhotosEv.foto_hasil) && managePhotosEv.foto_hasil.length === 0)) && (
+              <p style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>Belum ada foto.</p>
+            )}
+
+            <button onClick={() => setManagePhotosEv(null)} style={{ width: '100%', padding: 12, background: '#f1f5f9', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 20 }}>
+              Tutup
+            </button>
           </div>
         </>
       )}

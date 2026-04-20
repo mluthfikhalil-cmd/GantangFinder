@@ -11,7 +11,7 @@ interface Ev {
   tanggal?: string|null; jenis_burung?: string[]; is_featured?: boolean
   level_event?: string|null; aturan_sangkar?: string|null; jenis_lomba?: string
   kategori_merpati?: string|null; jarak_meter?: number|null; kategori_kelas?: string|null
-  kontak?: string|null; biaya_daftar?: number|null; foto_hasil?: string|null
+  kontak?: string|null; biaya_daftar?: number|null; foto_hasil?: string[]|string|null
 }
 
 const LC: Record<string,{bg:string;color:string;border:string}> = {
@@ -114,109 +114,25 @@ export default function DetailPage() {
         )}
 
         {/* Foto Hasil Lomba */}
-        {ev.foto_hasil && (
+        {ev.foto_hasil && (Array.isArray(ev.foto_hasil) ? ev.foto_hasil.length > 0 : !!ev.foto_hasil) && (
           <div style={{background:'#fff',borderRadius:16,padding:20,border:'1.5px solid #f1f5f9',boxShadow:'0 2px 8px rgba(0,0,0,.06)',marginBottom:16}}>
             <h2 style={{fontSize:16,fontWeight:800,color:'#0f172a',marginBottom:12,display:'flex',alignItems:'center',gap:8}}>
               📸 Hasil Perlombaan
             </h2>
-            <div style={{ borderRadius:12, overflow:'hidden', border:'1px solid #e2e8f0' }}>
-              <img 
-                src={ev.foto_hasil} 
-                alt={`Hasil ${ev.nama_event}`} 
-                style={{ width:'100%', height:'auto', display:'block' }}
-              />
-            </div>
-            <p style={{fontSize:12,color:'#64748b',marginTop:10,textAlign:'center'}}>
-              Foto resmi hasil pemenang lomba
-            </p>
-          </div>
-        )}
-
-        {/* 📸 SEKSI FOTO HASIL LOMBA */}
-        {ev.foto_hasil && (
-          <div style={{background:'#fff',borderRadius:16,padding:20,border:'1.5px solid #f1f5f9',boxShadow:'0 2px 8px rgba(0,0,0,.06)',marginBottom:16}}>
-            <h2 style={{fontSize:16,fontWeight:800,color:'#0f172a',marginBottom:12,display:'flex',alignItems:'center',gap:8}}>
-              📸 Hasil Perlombaan
-            </h2>
-            <div style={{ borderRadius:12, overflow:'hidden', border:'1px solid #e2e8f0', background:'#f8fafc' }}>
-              <img 
-                src={ev.foto_hasil} 
-                alt={`Hasil ${ev.nama_event}`} 
-                style={{ width:'100%', height:'auto', display:'block' }}
-                onError={(e) => {
-                  console.error('Gagal muat gambar:', ev.foto_hasil);
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-            </div>
-            <p style={{fontSize:12,color:'#64748b',marginTop:10,textAlign:'center',fontStyle:'italic'}}>
-              Klik gambar untuk memperbesar (jika didukung browser)
-            </p>
-          </div>
-        )}
-
-        {/* 📸 SEKSI FOTO HASIL LOMBA */}
-        {ev.foto_hasil && (
-          <div style={{background:'#fff',borderRadius:16,padding:20,border:'1.5px solid #f1f5f9',boxShadow:'0 2px 8px rgba(0,0,0,.06)',marginBottom:16}}>
-            <h2 style={{fontSize:16,fontWeight:800,color:'#0f172a',marginBottom:12,display:'flex',alignItems:'center',gap:8}}>
-              📸 Hasil Perlombaan
-            </h2>
-            <div style={{ borderRadius:12, overflow:'hidden', border:'1px solid #e2e8f0', background:'#f8fafc' }}>
-              <img 
-                src={ev.foto_hasil} 
-                alt={`Hasil ${ev.nama_event}`} 
-                style={{ width:'100%', height:'auto', display:'block' }}
-                onError={(e) => {
-                  console.error('Gagal muat gambar:', ev.foto_hasil);
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-            </div>
-            <p style={{fontSize:12,color:'#64748b',marginTop:10,textAlign:'center',fontStyle:'italic'}}>
-              Klik gambar untuk memperbesar (jika didukung browser)
-            </p>
-          </div>
-        )}
-
-        {/* 📸 SEKSI FOTO HASIL LOMBA */}
-        {ev.foto_hasil && (
-          <div style={{background:'#fff',borderRadius:16,padding:20,border:'1.5px solid #f1f5f9',boxShadow:'0 2px 8px rgba(0,0,0,.06)',marginBottom:16}}>
-            <h2 style={{fontSize:16,fontWeight:800,color:'#0f172a',marginBottom:12,display:'flex',alignItems:'center',gap:8}}>
-              📸 Hasil Perlombaan
-            </h2>
-            <div style={{ borderRadius:12, overflow:'hidden', border:'1px solid #e2e8f0', background:'#f8fafc' }}>
-              <img 
-                src={ev.foto_hasil} 
-                alt={`Hasil ${ev.nama_event}`} 
-                style={{ width:'100%', height:'auto', display:'block' }}
-                onError={(e) => {
-                  console.error('Gagal muat gambar:', ev.foto_hasil);
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-            </div>
-            <p style={{fontSize:12,color:'#64748b',marginTop:10,textAlign:'center',fontStyle:'italic'}}>
-              Klik gambar untuk memperbesar (jika didukung browser)
-            </p>
-          </div>
-        )}
-
-        {/* 📸 SEKSI FOTO HASIL LOMBA */}
-        {ev.foto_hasil && (
-          <div style={{background:'#fff',borderRadius:16,padding:20,border:'1.5px solid #f1f5f9',boxShadow:'0 2px 8px rgba(0,0,0,.06)',marginBottom:16}}>
-            <h2 style={{fontSize:16,fontWeight:800,color:'#0f172a',marginBottom:12,display:'flex',alignItems:'center',gap:8}}>
-              📸 Hasil Perlombaan
-            </h2>
-            <div style={{ borderRadius:12, overflow:'hidden', border:'1px solid #e2e8f0', background:'#f8fafc' }}>
-              <img 
-                src={ev.foto_hasil} 
-                alt={`Hasil ${ev.nama_event}`} 
-                style={{ width:'100%', height:'auto', display:'block' }}
-                onError={(e) => {
-                  console.error('Gagal muat gambar:', ev.foto_hasil);
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {(Array.isArray(ev.foto_hasil) ? ev.foto_hasil : [ev.foto_hasil]).map((url, i) => (
+                <div key={i} style={{ borderRadius:12, overflow:'hidden', border:'1px solid #e2e8f0', background:'#f8fafc' }}>
+                  <img 
+                    src={url} 
+                    alt={`Hasil ${ev.nama_event} - ${i+1}`} 
+                    style={{ width:'100%', height:'auto', display:'block' }}
+                    onError={(e) => {
+                      console.error('Gagal muat gambar:', url);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                </div>
+              ))}
             </div>
             <p style={{fontSize:12,color:'#64748b',marginTop:10,textAlign:'center',fontStyle:'italic'}}>
               Klik gambar untuk memperbesar (jika didukung browser)
