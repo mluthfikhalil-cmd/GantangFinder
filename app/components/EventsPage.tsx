@@ -35,12 +35,12 @@ function checkReminders(events: Event[]) {
 
 function checkWatchlistNotifications(events: Event[], watchlist: Watchlist) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
-  if (!watchlist.cities.length && !watchlist.birds.length) return
+  if (!watchlist.cities?.length && !watchlist.birds?.length) return
   const seen = JSON.parse(localStorage.getItem('gf_seen') || '[]') as string[]
   events.forEach(ev => {
     if (seen.includes(ev.id)) return
-    const cityMatch = !watchlist.cities.length || watchlist.cities.some(c => ev.kota.toLowerCase().includes(c.toLowerCase()))
-    const birdMatch = !watchlist.birds.length || watchlist.birds.some(b => ev.jenis_burung?.includes(b))
+    const cityMatch = !watchlist.cities?.length || watchlist.cities.some(c => ev.kota.toLowerCase().includes(c.toLowerCase()))
+    const birdMatch = !watchlist.birds?.length || watchlist.birds.some(b => ev.jenis_burung?.includes(b))
     if (cityMatch && birdMatch) {
       new Notification(`🐦 Event Baru: ${ev.nama_event}`, {
         body: `${ev.kota} • ${ev.tanggal ? new Date(ev.tanggal).toLocaleDateString('id-ID') : 'Jadwal rutin'}`,
@@ -68,7 +68,8 @@ export default function EventsPage() {
       const evs = await dbFetchEvents()
       setEvents(evs)
       // Check reminders & watchlist
-      const wl = JSON.parse(localStorage.getItem('gf_watchlist') || '{}') as Watchlist
+      const raw = localStorage.getItem('gf_watchlist')
+      const wl: Watchlist = raw ? JSON.parse(raw) : { cities: [], birds: [] }
       setWatchlist(wl)
       checkReminders(evs)
       checkWatchlistNotifications(evs, wl)
