@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { registerUserAction } from '@/app/actions/registerUser'
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ 
@@ -33,17 +34,12 @@ export default function RegisterPage() {
     }
 
     try {
-      const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setMsg({ type: 'success', text: data.message })
+      const data = await registerUserAction(form)
+      if (data.success) {
+        setMsg({ type: 'success', text: data.message as string })
         setForm({ nama_lengkap: '', nomor_wa: '', email: '', kota: '', password: '', confirmPassword: '', role: '' })
       } else {
-        setMsg({ type: 'error', text: data.error })
+        setMsg({ type: 'error', text: data.error as string })
       }
     } catch {
       setMsg({ type: 'error', text: 'Terjadi kesalahan. Coba lagi.' })

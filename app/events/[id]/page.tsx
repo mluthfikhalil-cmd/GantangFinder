@@ -4,6 +4,13 @@ import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { generatePoster } from '@/app/actions/generatePoster'
 
+interface Bird {
+  id: string; nama_burung: string; jenis_burung: string; owner_id: string
+}
+interface Participant {
+  id: string; bird_id: string; bird_name: string; payment_status: string; registered_at: string
+}
+
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
@@ -79,6 +86,14 @@ export default function DetailPage() {
   const [notFound, setNotFound] = useState(false)
   const [posterLoading, setPosterLoading] = useState(false)
   const [posterHtml, setPosterHtml] = useState<string|null>(null)
+  const [user, setUser] = useState<{id?:string;role?:string;status?:string;nama?:string}|null>(null)
+  const [showDaftarModal, setShowDaftarModal] = useState(false)
+  const [myBirds, setMyBirds] = useState<Bird[]>([])
+  const [selectedBird, setSelectedBird] = useState<Bird|null>(null)
+  const [daftarLoading, setDaftarLoading] = useState(false)
+  const [daftarMsg, setDaftarMsg] = useState<{type:'success'|'error',text:string}|null>(null)
+  const [myParticipants, setMyParticipants] = useState<Participant[]>([])
+  const [showSuccessToast, setShowSuccessToast] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -94,6 +109,14 @@ export default function DetailPage() {
       })
       .catch(() => { setNotFound(true); setLoading(false) })
   }, [id])
+
+  // Load user from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('gf_user')
+      if (stored) setUser(JSON.parse(stored))
+    } catch {}
+  }, [])
 
   if (loading) return (
     <div style={{minHeight:'100vh',background:'#f0fdf4',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -310,16 +333,158 @@ export default function DetailPage() {
         </a>
       </div>
 
-      {/* Sticky WA Button */}
+      {/* Sticky Buttons */}
       <div style={{position:'fixed',bottom:0,left:0,right:0,padding:'12px 16px 20px',background:'linear-gradient(to top,var(--bg-primary) 80%,transparent)',zIndex:40}}>
-        <div style={{maxWidth:640,margin:'0 auto'}}>
+        <div style={{maxWidth:640,margin:'0 auto',display:'flex',gap:10}}>
+          {user?.role === 'peserta' && (
+            <button
+              onClick={() => {
+                if (!user?.id) { alert('Silakan login terlebih dahulu'); return }
+                // Load user's birds
+                fetch(`${SB_URL}/rest/v1/birds?owner_id=eq.${user.id}&order=nama_burung.asc`, { headers: H })
+                  .then(r => r.json())
+                  .then(data => {
+                    if (Array.isArray(data) && data.length === 0) {
+                      alert('Anda belum punya bird. Tambahkan bird di halaman Birds terlebih dahulu.')
+                      return
+                    }
+                    setMyBirds(Array.isArray(data) ? data : [])
+                    // Load existing participants for this event by this user
+                    fetch(`${SB_URL}/rest/v1/event_participants?event_id=eq.${id}&owner_id=eq.${user.id}&select=bird_id,payment_status`, { headers: H })
+                      .then(r => r.json())
+                      .then(p => setMyParticipants(Array.isArray(p) ? p : []))
+                      .catch(() => setMyParticipants([]))
+                    setShowDaftarModal(true)
+                    setDaftarMsg(null)
+                    setSelectedBird(null)
+                  })
+                  .catch(() => alert('Gagal memuat bird'))
+              }}
+              style={{flex:1,padding:'16px 0',background:'#16a34a',color:'#fff',border:'none',borderRadius:14,fontSize:15,fontWeight:700,cursor:'pointer',boxShadow:'0 4px 16px rgba(22,163,74,.3)',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+              🐦 Daftar Bird
+            </button>
+          )}
           <a href={waLink(ev.kontak,ev.nama_event)} target="_blank" rel="noopener noreferrer"
-            style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,width:'100%',padding:'16px 0',background:'#25D366',color:'#fff',borderRadius:14,fontSize:16,fontWeight:700,textDecoration:'none',boxShadow:'0 4px 20px rgba(37,211,102,.4)',boxSizing:'border-box'}}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
-            {ev.kontak ? 'Daftar via WhatsApp' : 'Hubungi Panitia'}
+            style={{flex:user?.role === 'peserta' ? 1 : 'none',display:'flex',alignItems:'center',justifyContent:'center',gap:10,padding:'16px 0',background:'#25D366',color:'#fff',borderRadius:14,fontSize:15,fontWeight:700,textDecoration:'none',boxShadow:'0 4px 20px rgba(37,211,102,.4)'}}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+            {ev.kontak ? 'Daftar via WhatsApp' : 'Hubungi'}
           </a>
         </div>
-      </div>
+      )}
+
+      {/* Daftar Bird Modal */}
+      {showDaftarModal && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.7)',zIndex:100,display:'flex',alignItems:'flex-end',justifyContent:'center',padding:16}}>
+          <div style={{background:'var(--bg-primary)',borderRadius:20,width:'100%',maxWidth:640,maxHeight:'85vh',overflow:'hidden',display:'flex',flexDirection:'column',boxShadow:'0 -4px 40px rgba(0,0,0,.3)'}}>
+            {/* Header */}
+            <div style={{padding:'16px 20px',borderBottom:'1px solid var(--border-color)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <div>
+                <h3 style={{margin:0,fontSize:17,fontWeight:800,color:'var(--text-primary)'}}>🐦 Daftar Bird ke Event</h3>
+                <p style={{margin:'4px 0 0',fontSize:12,color:'var(--text-secondary)'}}>{ev.nama_event}</p>
+              </div>
+              <button onClick={()=>setShowDaftarModal(false)} style={{background:'var(--bg-secondary)',border:'none',borderRadius:10,width:36,height:36,fontSize:18,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--text-secondary)'}}>×</button>
+            </div>
+
+            {/* Body */}
+            <div style={{flex:1,overflow:'auto',padding:'16px 20px'}}>
+              {daftarMsg && (
+                <div style={{padding:'10px 14px',borderRadius:10,background:daftarMsg.type==='success'?'#f0fdf4':'#fef2f2',color:daftarMsg.type==='success'?'#15803d':'#dc2626',fontSize:13,fontWeight:600,marginBottom:14,border:`1px solid ${daftarMsg.type==='success'?'#86efac':'#fecaca'}`}}>
+                  {daftarMsg.text}
+                </div>
+              )}
+
+              {ev.biaya_daftar && ev.biaya_daftar > 0 && (
+                <div style={{padding:'12px 16px',background:'#fef3c7',borderRadius:12,border:'1px solid #fcd34d',marginBottom:16}}>
+                  <p style={{margin:0,fontSize:13,fontWeight:700,color:'#b45309'}}>💰 Biaya Pendaftaran: <strong>{fmtBiaya(ev.biaya_daftar)}</strong></p>
+                  <p style={{margin:'4px 0 0',fontSize:12,color:'#92400e'}}>Pembayaran akan diarahkan ke WhatsApp penyelenggara setelah Anda pilih bird.</p>
+                </div>
+              )}
+
+              <p style={{fontSize:14,fontWeight:700,color:'var(--text-primary)',marginBottom:10}}>Pilih Bird:</p>
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {myBirds.map(bird => {
+                  const isRegistered = myParticipants.some(p => p.bird_id === bird.id)
+                  return (
+                    <button
+                      key={bird.id}
+                      onClick={() => !isRegistered && setSelectedBird(bird)}
+                      disabled={isRegistered}
+                      style={{
+                        display:'flex',alignItems:'center',gap:12,padding:'12px 16px',
+                        background: isRegistered ? 'var(--bg-secondary)' : selectedBird?.id === bird.id ? '#f0fdf4' : 'var(--bg-card)',
+                        border: `2px solid ${isRegistered ? 'var(--border-color)' : selectedBird?.id === bird.id ? '#16a34a' : 'var(--border-color)'}`,
+                        borderRadius:12,cursor: isRegistered ? 'not-allowed' : 'pointer',textAlign:'left',width:'100%',
+                        opacity: isRegistered ? 0.6 : 1
+                      }}>
+                      <div style={{width:40,height:40,borderRadius:10,background: selectedBird?.id === bird.id ? '#16a34a' : '#e2e8f0',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20}}>
+                        {selectedBird?.id === bird.id ? '✓' : '🐦'}
+                      </div>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:14,fontWeight:700,color:'var(--text-primary)'}}>{bird.nama_burung}</div>
+                        <div style={{fontSize:12,color:'var(--text-secondary)'}}>{bird.jenis_burung}</div>
+                      </div>
+                      {isRegistered && <span style={{fontSize:12,fontWeight:700,color:'#16a34a',background:'#dcfce7',padding:'3px 10px',borderRadius:9999}}>Sudah Terdaftar</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{padding:'16px 20px',borderTop:'1px solid var(--border-color)'}}>
+              <button
+                onClick={async () => {
+                  if (!selectedBird) { alert('Pilih bird terlebih dahulu'); return }
+                  if (!user?.id) { alert('Silakan login terlebih dahulu'); return }
+                  setDaftarLoading(true)
+                  setDaftarMsg(null)
+
+                  const isPaid = !!(ev.biaya_daftar && ev.biaya_daftar > 0)
+
+                  try {
+                    const res = await fetch('/api/event-participants', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        event_id: id,
+                        bird_id: selectedBird.id,
+                        owner_id: user.id,
+                        owner_name: user.nama || '',
+                        bird_name: selectedBird.nama_burung,
+                        event_name: ev.nama_event,
+                        event_date: ev.tanggal || null,
+                        event_kota: ev.kota,
+                        event_tingkat: ev.level_event || null,
+                        event_jenis_burung: (ev.jenis_burung || []).join(','),
+                        is_paid_event: isPaid,
+                        biaya_daftar: ev.biaya_daftar || 0,
+                      })
+                    })
+                    const data = await res.json()
+
+                    if (!res.ok) {
+                      setDaftarMsg({ type: 'error', text: data.error || 'Gagal mendaftar' })
+                    } else {
+                      setDaftarMsg({ type: 'success', text: isPaid
+                        ? `Berhasil mendaftar! Biaya ${fmtBiaya(ev.biaya_daftar)} akan diurus via WhatsApp.`
+                        : 'Berhasil mendaftar! Selamat berlomba 🏆'
+                      })
+                      setMyParticipants(prev => [...prev, { id: '', bird_id: selectedBird.id, bird_name: selectedBird.nama_burung, payment_status: isPaid ? 'pending_payment' : 'free', registered_at: new Date().toISOString() }])
+                      setTimeout(() => setShowDaftarModal(false), 2000)
+                    }
+                  } catch {
+                    setDaftarMsg({ type: 'error', text: 'Terjadi kesalahan. Coba lagi.' })
+                  } finally {
+                    setDaftarLoading(false)
+                  }
+                }}
+                disabled={!selectedBird || daftarLoading}
+                style={{width:'100%',padding:'14px',background: selectedBird && !daftarLoading ? '#16a34a' : '#9ca3af',color:'#fff',border:'none',borderRadius:12,fontSize:15,fontWeight:700,cursor: selectedBird && !daftarLoading ? 'pointer' : 'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                {daftarLoading ? '⏳ Mendaftarkan...' : selectedBird ? `🐦 Daftar ${selectedBird.nama_burung}` : 'Pilih bird terlebih dahulu'}
+              </button>
+            </div>
+          </div>
+      )}
 
       {/* Poster Modal */}
       {posterHtml && (
