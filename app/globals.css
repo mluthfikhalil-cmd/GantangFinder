@@ -206,38 +206,53 @@ button:active {
 ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* Decorative Background Birds */
+/* ========================================
+   ANIMATED BIRD BACKGROUND STYLES
+   ======================================== */
+
 .bg-bird-container {
   position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
-}
-.bird-svg {
-  position: absolute;
-  fill: var(--text-primary);
-  opacity: 0.1;
-}
-.bird-1 {
-  width: 400px;
-  top: -50px;
-  right: -100px;
-  transform: rotate(-15deg);
-}
-.bird-2 {
-  width: 300px;
-  bottom: 10%;
-  left: -50px;
-  transform: rotate(10deg);
-}
-.bird-3 {
-  width: 150px;
-  top: 40%;
-  left: 60%;
-  opacity: 0.08;
+  pointer-events: none; /* Penting: Agar tidak memblokir klik user */
+  z-index: -1; /* Di belakang semua konten */
 }
 
-[data-theme="dark"] .bird-svg {
-  opacity: 0.15;
+.bird-svg {
+  position: absolute;
+  opacity: 0.12; /* Transparan agar subtil */
+  fill: var(--text-primary); /* Warna adaptif Dark/Light Mode */
+  animation: fly-across linear infinite;
+}
+
+/* Variasi Ukuran */
+.bird-small { width: 30px; height: 30px; }
+.bird-medium { width: 50px; height: 50px; }
+.bird-large { width: 70px; height: 70px; }
+
+/* Animasi Terbang Melintasi Layar (Kiri ke Kanan) */
+@keyframes fly-across {
+  0% {
+    transform: translateX(-10vw) translateY(0) rotate(5deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.12;
+  }
+  90% {
+    opacity: 0.12;
+  }
+  100% {
+    transform: translateX(110vw) translateY(-15px) rotate(-5deg);
+    opacity: 0;
+  }
+}
+
+/* Opsional: Animasi Mengambang untuk elemen statis */
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
