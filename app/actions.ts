@@ -228,3 +228,40 @@ export async function deleteResultImage(eventId: string, imageUrl: string) {
     return { error: e instanceof Error ? e.message : 'Terjadi kesalahan.' }
   }
 }
+
+export async function uploadBirdPhoto(birdId: string, file: File) {
+  if (!SB_URL || !SB_KEY) return { error: 'Konfigurasi database tidak ditemukan.' }
+  try {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${birdId}-${Math.random().toString(36).substring(2)}.${fileExt}`
+    const filePath = `${fileName}`
+
+    const uploadRes = await fetch(`${SB_URL}/storage/v1/object/birds/${filePath}`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': file.type, 'x-upsert': 'true' },
+      body: file,
+    })
+
+    if (!uploadRes.ok) {
+      const errText = await uploadRes.text().catch(() => '')
+      return { error: `Gagal upload foto: ${uploadRes.status} ${errText}` }
+    }
+
+    const publicUrl = `${SB_URL}/storage/v1/object/public/birds/${filePath}`
+
+    const updateRes = await fetch(`${SB_URL}/rest/v1/birds?id=eq.${birdId}`, {
+      method: 'PATCH',
+      headers: { ...headers(), 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ foto_burung: publicUrl }),
+    })
+
+    if (!updateRes.ok) {
+      return { error: `Gagal update DB` }
+    }
+    
+    revalidatePath('/birds')
+    return { success: true, url: publicUrl }
+  } catch (e: any) {
+    return { error: e.message }
+  }
+}

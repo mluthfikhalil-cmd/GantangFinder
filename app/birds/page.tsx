@@ -7,6 +7,8 @@ const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
 
+import { uploadBirdPhoto } from '@/app/actions'
+
 interface Bird {
   id: string
   nama_burung: string
@@ -14,6 +16,7 @@ interface Bird {
   owner_id: string
   owner_name: string
   created_at: string
+  foto_burung?: string
 }
 
 interface BirdEvent {
@@ -60,6 +63,7 @@ export default function BirdsPage() {
 
   // Form state
   const [form, setForm] = useState({ nama_burung: '', jenis_burung: '' })
+  const [file, setFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [formErr, setFormErr] = useState('')
 
@@ -104,8 +108,18 @@ export default function BirdsPage() {
       })
       const data = await res.json()
       if (res.ok && data.success) {
-        setBirds(prev => [{ ...data.bird, ...form, owner_id: user.id, owner_name: user.nama_lengkap }, ...prev])
+        let finalBird = { ...data.bird, ...form, owner_id: user.id, owner_name: user.nama_lengkap }
+        if (file) {
+          const uploadRes = await uploadBirdPhoto(data.bird.id, file)
+          if (uploadRes.success) {
+            finalBird.foto_burung = uploadRes.url
+          } else {
+            alert('Bird tersimpan, tapi foto gagal diupload: ' + uploadRes.error)
+          }
+        }
+        setBirds(prev => [finalBird, ...prev])
         setForm({ nama_burung: '', jenis_burung: '' })
+        setFile(null)
         setShowAdd(false)
       } else {
         setFormErr(data.error || 'Gagal menambahkan bird')
@@ -180,6 +194,15 @@ export default function BirdsPage() {
                   {JENIS_BURUNG_OPTIONS.map(j => <option key={j} value={j}>{j}</option>)}
                 </select>
               </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Foto Burung (Opsional)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setFile(e.target.files?.[0] || null)}
+                  style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 13, fontFamily: 'inherit' }}
+                />
+              </div>
               {formErr && <p style={{ color: '#dc2626', fontSize: 13, margin: 0 }}>{formErr}</p>}
               <button
                 type="submit"
@@ -207,8 +230,13 @@ export default function BirdsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {birds.map(bird => (
               <div key={bird.id} style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,.04)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                  {bird.foto_burung ? (
+                    <img src={bird.foto_burung} alt={bird.nama_burung} style={{ width: 50, height: 50, borderRadius: 10, objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: 50, height: 50, borderRadius: 10, background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>🐦</div>
+                  )}
+                  <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>{bird.nama_burung}</div>
                     <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
                       {bird.jenis_burung} • Ditambahkan {fmtDate(bird.created_at)}
@@ -246,9 +274,16 @@ export default function BirdsPage() {
           <div onClick={() => setSelectedBird(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', backdropFilter: 'blur(4px)', zIndex: 100 }} />
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#fff', borderRadius: 20, width: '90%', maxWidth: 500, zIndex: 101, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,.2)', maxHeight: '80vh', overflow: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{selectedBird.nama_burung}</h2>
-                <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>{selectedBird.jenis_burung}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {selectedBird.foto_burung ? (
+                  <img src={selectedBird.foto_burung} alt={selectedBird.nama_burung} style={{ width: 60, height: 60, borderRadius: 12, objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: 60, height: 60, borderRadius: 12, background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🐦</div>
+                )}
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{selectedBird.nama_burung}</h2>
+                  <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>{selectedBird.jenis_burung}</p>
+                </div>
               </div>
               <button onClick={() => setSelectedBird(null)} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: '#94a3b8' }}>×</button>
             </div>
