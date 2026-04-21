@@ -188,14 +188,25 @@ export default function Home() {
         )}
       </main>
 
-      {/* FAB */}
-      <button onClick={()=>setModal(true)} style={{position:'fixed',bottom:24,right:24,display:'flex',alignItems:'center',gap:8,background:'linear-gradient(135deg,#16a34a,#15803d)',color:'#fff',border:'none',borderRadius:9999,padding:'14px 22px',fontSize:15,fontWeight:700,fontFamily:'inherit',cursor:'pointer',boxShadow:'0 8px 24px rgba(22,163,74,.4)',zIndex:40}}>
-        + Tambah Event
-      </button>
-
       {modal && <AddModal tab={tab} onClose={()=>setModal(false)} onSaved={ev=>{setEvs(p=>[ev,...p]);setModal(false)}}/>}
       {subModal && <SubscribeModal onClose={()=>setSubModal(false)} onSaved={()=>{setSubModal(false);setToast('✅ Berhasil! Kamu akan dapat info lomba terbaru.');setTimeout(()=>setToast(''),4000)}}/>}
       {toast && <div style={{position:'fixed',bottom:90,left:'50%',transform:'translateX(-50%)',background:'#0f172a',color:'#fff',padding:'12px 20px',borderRadius:12,fontSize:14,fontWeight:600,zIndex:60,whiteSpace:'nowrap',boxShadow:'0 4px 20px rgba(0,0,0,.3)'}}>{toast}</div>}
+
+      {/* Bottom Navigation Bar */}
+      <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'var(--bg-primary)',borderTop:'1px solid var(--border-color)',display:'flex',alignItems:'center',justifyContent:'space-around',padding:'8px 0 max(8px, env(safe-area-inset-bottom))',zIndex:40,boxShadow:'0 -4px 12px rgba(0,0,0,0.06)'}}>
+        <a href="/" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'var(--accent-green)',fontSize:11,fontWeight:700}}>
+          <span style={{fontSize:22}}>🏠</span>Home
+        </a>
+        <a href="/leaderboard" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'var(--text-secondary)',fontSize:11,fontWeight:600}}>
+          <span style={{fontSize:22}}>🏆</span>Leaderboard
+        </a>
+        <a href="/birds" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'var(--text-secondary)',fontSize:11,fontWeight:600}}>
+          <span style={{fontSize:22}}>🐦</span>Profil Burung
+        </a>
+        <button onClick={()=>setModal(true)} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',border:'none',background:'transparent',cursor:'pointer',color:'var(--text-secondary)',fontSize:11,fontWeight:600,fontFamily:'inherit'}}>
+          <span style={{fontSize:22}}>➕</span>Tambah
+        </button>
+      </nav>
 
       {/* Footer & Admin Link */}
       <footer style={{textAlign:'center',padding:'40px 20px',background:'#f0fdf4',borderTop:'1px solid #dcfce7'}}>

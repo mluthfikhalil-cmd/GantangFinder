@@ -305,6 +305,22 @@ export default function LeaderboardPage() {
           </div>
         )}
       </div>
+
+      {/* Bottom Navigation Bar */}
+      <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#fff',borderTop:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-around',padding:'8px 0 env(safe-area-inset-bottom,8px)',zIndex:40,boxShadow:'0 -4px 12px rgba(0,0,0,0.06)'}}>
+        <a href="/" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'#94a3b8',fontSize:11,fontWeight:600}}>
+          <span style={{fontSize:22}}>🏠</span>Home
+        </a>
+        <a href="/leaderboard" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'#16a34a',fontSize:11,fontWeight:700}}>
+          <span style={{fontSize:22}}>🏆</span>Leaderboard
+        </a>
+        <a href="/birds" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'#94a3b8',fontSize:11,fontWeight:600}}>
+          <span style={{fontSize:22}}>🐦</span>Profil Burung
+        </a>
+        <a href="/?add=1" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'#94a3b8',fontSize:11,fontWeight:600}}>
+          <span style={{fontSize:22}}>➕</span>Tambah
+        </a>
+      </nav>
     </div>
   )
 }
