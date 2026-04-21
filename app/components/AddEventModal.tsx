@@ -1,8 +1,16 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { dbInsertEvent } from '../../lib/supabase'
+import { addEvent } from '../actions'
 import { LEVELS, BIRDS } from './types'
+
+interface User {
+  id: string
+  nama_lengkap: string
+  role: 'organizer' | 'peserta'
+  status: 'pending_approval' | 'active' | 'rejected'
+  nomor_wa: string
+}
 
 const SANGKAR_OPTIONS = [
   'Bebas',
@@ -37,7 +45,18 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
   const [selectedBurung, setSelectedBurung] = useState<string[]>([])
   const [selectedLevel, setSelectedLevel] = useState('')
   const [isFeatured, setIsFeatured] = useState(false)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
+
+  // Load current user from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('gf_user')
+    if (stored) {
+      try {
+        setCurrentUser(JSON.parse(stored) as User)
+      } catch { /* ignore */ }
+    }
+  }, [])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
@@ -59,21 +78,35 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
     setLoading(true)
     setError('')
 
+    // Client-side check: must be logged in active organizer
+    if (!currentUser || currentUser.role !== 'organizer' || currentUser.status !== 'active') {
+      setError('Anda belum login atau belum disetujui sebagai organizer.')
+      setLoading(false)
+      return
+    }
+
     try {
       const form = e.currentTarget
       const get = (name: string) => (form.elements.namedItem(name) as HTMLInputElement)?.value || ''
 
-      await dbInsertEvent({
-        nama_event: get('nama_event'),
-        penyelenggara: get('penyelenggara'),
-        lokasi: get('lokasi'),
-        kota: get('kota'),
-        tanggal: get('tanggal') || null,
-        jenis_burung: selectedBurung,
-        is_featured: isFeatured,
-        level_event: get('level_event') || null,
-        aturan_sangkar: get('aturan_sangkar') || null,
-      })
+      // Build FormData to pass to server action
+      const fd = new FormData()
+      fd.append('nama_event', get('nama_event'))
+      fd.append('penyelenggara', get('penyelenggara'))
+      fd.append('lokasi', get('lokasi'))
+      fd.append('kota', get('kota'))
+      fd.append('tanggal', get('tanggal'))
+      fd.append('jenis_burung', selectedBurung.join(','))
+      fd.append('is_featured', String(isFeatured))
+      fd.append('level_event', get('level_event'))
+      fd.append('aturan_sangkar', get('aturan_sangkar'))
+
+      const result = await addEvent(fd, currentUser.id)
+      if (result && 'error' in result) {
+        setError(result.error as string)
+        setLoading(false)
+        return
+      }
 
       setSuccess(true)
       setTimeout(() => {
@@ -92,31 +125,35 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
     }
   }
 
+  const canAddEvent = currentUser?.role === 'organizer' && currentUser?.status === 'active'
+
   return (
     <>
-      {/* Floating Button */}
-      <button
-        id="btn-tambah-event"
-        onClick={() => setOpen(true)}
-        style={{
-          position: 'fixed', bottom: 24, right: 24,
-          display: 'flex', alignItems: 'center', gap: 8,
-          background: 'linear-gradient(135deg,#16a34a,#15803d)',
-          color: '#fff', border: 'none', borderRadius: 9999,
-          padding: '14px 22px', fontSize: 15, fontWeight: 700,
-          fontFamily: 'inherit', cursor: 'pointer',
-          boxShadow: '0 8px 24px rgba(22,163,74,0.4)',
-          transition: 'all 0.2s cubic-bezier(0.34,1.56,0.64,1)',
-          zIndex: 40, animation: 'pulse-green 2.5s ease infinite',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.06) translateY(-2px)' }}
-        onMouseLeave={e => { e.currentTarget.style.transform = '' }}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-        Tambah Event
-      </button>
+      {/* Floating Button - only shown to active organizers */}
+      {canAddEvent && (
+        <button
+          id="btn-tambah-event"
+          onClick={() => setOpen(true)}
+          style={{
+            position: 'fixed', bottom: 24, right: 24,
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: 'linear-gradient(135deg,#16a34a,#15803d)',
+            color: '#fff', border: 'none', borderRadius: 9999,
+            padding: '14px 22px', fontSize: 15, fontWeight: 700,
+            fontFamily: 'inherit', cursor: 'pointer',
+            boxShadow: '0 8px 24px rgba(22,163,74,0.4)',
+            transition: 'all 0.2s cubic-bezier(0.34,1.56,0.64,1)',
+            zIndex: 40, animation: 'pulse-green 2.5s ease infinite',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.06) translateY(-2px)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = '' }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Tambah Event
+        </button>
+      )}
 
       {/* Overlay */}
       {open && <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 50 }} />}

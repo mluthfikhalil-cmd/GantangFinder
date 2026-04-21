@@ -11,7 +11,7 @@ const headers = () => ({
   'Content-Type': 'application/json',
 })
 
-export async function addEvent(formData: FormData) {
+export async function addEvent(formData: FormData, userId?: string) {
   if (!SB_URL || !SB_KEY) return { error: 'Konfigurasi database tidak ditemukan.' }
 
   const nama_event = formData.get('nama_event') as string
@@ -26,6 +26,28 @@ export async function addEvent(formData: FormData) {
 
   if (!nama_event || !penyelenggara || !kota) {
     return { error: 'Nama event, penyelenggara, dan kota wajib diisi.' }
+  }
+
+  // Authorization check: verify user is logged in and approved organizer
+  if (!userId) {
+    return { error: 'Anda belum login. Silakan login terlebih dahulu.' }
+  }
+
+  // Fetch user from DB to verify status and role
+  const userRes = await fetch(
+    `${SB_URL}/rest/v1/users?id=eq.${userId}&select=id,role,status`,
+    { headers: headers() }
+  )
+  const users = await userRes.json()
+  if (!Array.isArray(users) || users.length === 0) {
+    return { error: 'User tidak ditemukan. Silakan login kembali.' }
+  }
+  const user = users[0]
+  if (user.role !== 'organizer') {
+    return { error: 'Hanya organizer yang dapat membuat event.' }
+  }
+  if (user.status !== 'active') {
+    return { error: 'Akun organizer Anda belum disetujui admin. Mohon tunggu persetujuan.' }
   }
 
   const jenis_burung = jenis_burung_raw
@@ -43,6 +65,7 @@ export async function addEvent(formData: FormData) {
       is_featured,
       level_event: level_event || null,
       aturan_sangkar: aturan_sangkar || null,
+      organizer_id: userId, // Track who created this event
     }
 
     const res = await fetch(`${SB_URL}/rest/v1/events`, {
