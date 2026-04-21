@@ -23,6 +23,11 @@ export async function addEvent(formData: FormData, userId?: string) {
   const is_featured = formData.get('is_featured') === 'true'
   const level_event = formData.get('level_event') as string
   const aturan_sangkar = formData.get('aturan_sangkar') as string
+  const jenis_lomba = formData.get('jenis_lomba') as string
+  const kontak = formData.get('kontak') as string
+  const kategori_merpati = formData.get('kategori_merpati') as string
+  const jarak_meter_raw = formData.get('jarak_meter') as string
+  const kategori_kelas = formData.get('kategori_kelas') as string
 
   if (!nama_event || !penyelenggara || !kota) {
     return { error: 'Nama event, penyelenggara, dan kota wajib diisi.' }
@@ -54,6 +59,8 @@ export async function addEvent(formData: FormData, userId?: string) {
     ? jenis_burung_raw.split(',').map(s => s.trim()).filter(Boolean)
     : []
 
+  const jarak_meter = jarak_meter_raw ? parseInt(jarak_meter_raw) : null
+
   try {
     const body: Record<string, unknown> = {
       nama_event,
@@ -65,7 +72,12 @@ export async function addEvent(formData: FormData, userId?: string) {
       is_featured,
       level_event: level_event || null,
       aturan_sangkar: aturan_sangkar || null,
-      organizer_id: userId, // Track who created this event
+      organizer_id: userId,
+      jenis_lomba: jenis_lomba || null,
+      kontak: kontak || null,
+      kategori_merpati: kategori_merpati || null,
+      jarak_meter,
+      kategori_kelas: kategori_kelas || null,
     }
 
     const res = await fetch(`${SB_URL}/rest/v1/events`, {
