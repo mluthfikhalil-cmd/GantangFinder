@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createHash } from 'crypto'
+import bcrypt from 'bcryptjs'
 
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' }
-
-function simpleHash(password: string): string {
-  return createHash('sha256').update(password + 'gantang_salt_2026').digest('hex')
-}
 
 function generateToken(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -34,26 +30,32 @@ export async function POST(req: NextRequest) {
 
     const user = data[0]
 
-    // Verify password
-    const password_hash = simpleHash(password)
-    if (password_hash !== user.password_hash) {
-      return NextResponse.json({ error: 'Password salah.' }, { status: 401 })
+    // Verify password with bcrypt
+    const isValid = await bcrypt.compare(password, user.password_hash)
+    if (!isValid) {
+      // Fallback checking for old sha256 hash if bcrypt fails (backward compatibility)
+      const crypto = require('crypto')
+      const oldHash = crypto.createHash('sha256').update(password + 'gantang_salt_2026').digest('hex')
+      if (oldHash !== user.password_hash) {
+        return NextResponse.json({ error: 'Password salah.' }, { status: 401 })
+      }
     }
 
-    // Check status
-    if (user.status === 'pending_approval') {
+    // Check status (default to active since new Qwen schema doesn't have status column)
+    const status = user.status || 'active'
+    if (status === 'pending_approval') {
       return NextResponse.json({ 
         error: 'Akun Anda sedang menunggu approval admin. Mohon tunggu.' 
       }, { status: 403 })
     }
 
-    if (user.status === 'rejected') {
+    if (status === 'rejected') {
       return NextResponse.json({ 
         error: 'Akun Anda ditolak. Hubungi admin untuk info lebih lanjut.' 
       }, { status: 403 })
     }
 
-    if (user.status !== 'active') {
+    if (status !== 'active') {
       return NextResponse.json({ 
         error: 'Akun belum diaktifkan. Hubungi admin.' 
       }, { status: 403 })
@@ -80,10 +82,10 @@ export async function POST(req: NextRequest) {
       user: {
         id: user.id,
         email: user.email,
-        nama_lengkap: user.nama_lengkap,
-        nomor_wa: user.nomor_wa,
-        role: user.role,
-        kota: user.kota,
+        nama_lengkap: user.full_name || user.nama_lengkap || 'User',
+        nomor_wa: user.whatsapp_number || user.nomor_wa || '',
+        role: user.role || 'peserta', // Default role if missing
+        kota: user.city || user.kota || '',
       },
       token,
     })
