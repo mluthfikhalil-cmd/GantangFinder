@@ -205,3 +205,39 @@ button:active {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Decorative Background Birds */
+.bg-bird-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.bird-svg {
+  position: absolute;
+  fill: var(--text-primary);
+  opacity: 0.03;
+}
+.bird-1 {
+  width: 400px;
+  top: -50px;
+  right: -100px;
+  transform: rotate(-15deg);
+}
+.bird-2 {
+  width: 300px;
+  bottom: 10%;
+  left: -50px;
+  transform: rotate(10deg);
+}
+.bird-3 {
+  width: 150px;
+  top: 40%;
+  left: 60%;
+  opacity: 0.02;
+}
+
+[data-theme="dark"] .bird-svg {
+  opacity: 0.05;
+}
