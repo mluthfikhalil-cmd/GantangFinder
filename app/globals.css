@@ -218,13 +218,14 @@ button:active {
   height: 100%;
   overflow: hidden;
   pointer-events: none; /* Penting: Agar tidak memblokir klik user */
-  z-index: -1; /* Di belakang semua konten */
+  z-index: 0; /* Harus 0, jangan -1 karena akan tertutup background body */
 }
 
 .bird-svg {
   position: absolute;
   opacity: 0.12; /* Transparan agar subtil */
   fill: var(--text-primary); /* Warna adaptif Dark/Light Mode */
+  color: var(--text-primary); /* Untuk path yang memakai currentColor */
   animation: fly-across linear infinite;
 }
 
