@@ -370,7 +370,7 @@ export default function DetailPage() {
             {ev.kontak ? 'Daftar via WhatsApp' : 'Hubungi'}
           </a>
         </div>
-      )}
+      </div>
 
       {/* Daftar Bird Modal */}
       {showDaftarModal && (
@@ -484,6 +484,7 @@ export default function DetailPage() {
               </button>
             </div>
           </div>
+        </div>
       )}
 
       {/* Poster Modal */}
