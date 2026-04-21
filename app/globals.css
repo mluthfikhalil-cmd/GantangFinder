@@ -217,7 +217,7 @@ button:active {
 .bird-svg {
   position: absolute;
   fill: var(--text-primary);
-  opacity: 0.03;
+  opacity: 0.1;
 }
 .bird-1 {
   width: 400px;
@@ -235,9 +235,9 @@ button:active {
   width: 150px;
   top: 40%;
   left: 60%;
-  opacity: 0.02;
+  opacity: 0.08;
 }
 
 [data-theme="dark"] .bird-svg {
-  opacity: 0.05;
+  opacity: 0.15;
 }
