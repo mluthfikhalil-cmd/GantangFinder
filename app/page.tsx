@@ -49,7 +49,6 @@ export default function Home() {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light')
     const handleScroll = () => setScrolled(window.scrollY > 10)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
@@ -64,10 +63,18 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (!SB_URL || !SB_KEY) { setErr('Env vars tidak ditemukan'); setLoading(false); return }
-    fetch(`${SB_URL}/rest/v1/events?select=*&order=is_featured.desc,tanggal.asc`, { headers: H })
-      .then(r => r.json()).then(d => { setEvs(Array.isArray(d) ? d : []); setLoading(false) })
-      .catch(e => { setErr(String(e)); setLoading(false) })
+    async function fetchEvents() {
+      if (!SB_URL || !SB_KEY) { setErr('Env vars tidak ditemukan'); setLoading(false); return }
+      try {
+        const r = await fetch(`${SB_URL}/rest/v1/events?select=*&order=is_featured.desc,tanggal.asc`, { headers: H })
+        const d = await r.json()
+        setEvs(Array.isArray(d) ? d : [])
+      } catch(e: unknown) {
+        setErr(String(e))
+      }
+      setLoading(false)
+    }
+    void fetchEvents()
   }, [])
 
   const list = evs.filter(e => {

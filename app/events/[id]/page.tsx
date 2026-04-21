@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { generatePoster } from '@/app/actions/generatePoster'
 
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
@@ -13,7 +14,13 @@ interface Ev {
   level_event?: string|null; aturan_sangkar?: string|null; jenis_lomba?: string
   kategori_merpati?: string|null; jarak_meter?: number|null; kategori_kelas?: string|null
   kontak?: string|null; biaya_daftar?: number|null; foto_hasil?: string[]|string|null
-  daftar_juara?: any[]|null
+  daftar_juara?: unknown[]|null
+}
+interface Juara {
+  posisi: number; nama_burung: string; pemilik: string
+}
+interface KelasJuara {
+  kelas: string; juara: Juara[]
 }
 
 const LC: Record<string,{bg:string;color:string;border:string}> = {
@@ -96,7 +103,7 @@ export default function DetailPage() {
 
   if (notFound || !ev) return (
     <div style={{minHeight:'100vh',background:'#f0fdf4',display:'flex',alignItems:'center',justifyContent:'center'}}>
-      <div style={{textAlign:'center'}}><div style={{fontSize:48}}>😕</div><h2 style={{color:'#0f172a',marginTop:12}}>Event tidak ditemukan</h2><a href="/" style={{display:'inline-block',marginTop:16,color:'#16a34a',textDecoration:'none',fontWeight:600}}>← Kembali ke beranda</a></div>
+      <div style={{textAlign:'center'}}><div style={{fontSize:48}}>😕</div><h2 style={{color:'#0f172a',marginTop:12}}>Event tidak ditemukan</h2><Link href="/" style={{display:'inline-block',marginTop:16,color:'#16a34a',textDecoration:'none',fontWeight:600}}>← Kembali ke beranda</Link></div>
     </div>
   )
 
@@ -112,9 +119,9 @@ export default function DetailPage() {
       {/* Header */}
       <div style={{background:'var(--header-bg)',padding:'16px 20px 20px', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 40}}>
         <div style={{maxWidth:640,margin:'0 auto'}}>
-          <a href="/" style={{display:'inline-flex',alignItems:'center',gap:6,color:'var(--text-secondary)',textDecoration:'none',fontSize:14,fontWeight:600,marginBottom:16}}>
+          <Link href="/" style={{display:'inline-flex',alignItems:'center',gap:6,color:'var(--text-secondary)',textDecoration:'none',fontSize:14,fontWeight:600,marginBottom:16}}>
             ← Kembali
-          </a>
+          </Link>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
             {ev.is_featured && <span style={{background:'linear-gradient(135deg,#f59e0b,#fbbf24)',color:'#fff',fontSize:12,fontWeight:700,padding:'4px 12px',borderRadius:9999}}>⭐ FEATURED</span>}
             <span style={{background:'var(--bg-primary)',color:'var(--text-primary)', border: '1px solid var(--border-color)', fontSize:12,fontWeight:600,padding:'4px 12px',borderRadius:9999}}>{isMerpati?'🕊️ Merpati/Dara':'🐦 Lomba Kicau'}</span>
@@ -177,13 +184,13 @@ export default function DetailPage() {
               🏆 Daftar Juara
             </h2>
             <div style={{display:'flex',flexDirection:'column',gap:20}}>
-              {ev.daftar_juara.map((kelasData: any, i: number) => (
+              {(ev.daftar_juara as Array<KelasJuara>).map((kelasData, i: number) => (
                 <div key={i}>
                   <h3 style={{fontSize:15,fontWeight:700,color:'var(--accent-green)',marginBottom:10,borderBottom:'2px solid var(--border-color)',paddingBottom:6}}>
                     {kelasData.kelas}
                   </h3>
                   <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                    {kelasData.juara.map((j: any, ji: number) => (
+                    {(kelasData.juara as Array<Juara>).map((j, ji: number) => (
                       <div key={ji} style={{display:'flex',alignItems:'center',gap:12,background:'var(--bg-secondary)',padding:'10px 14px',borderRadius:12,border:'1px solid var(--border-color)'}}>
                         <div style={{
                           width:28,height:28,borderRadius:'50%',background:j.posisi===1?'linear-gradient(135deg,#f59e0b,#fbbf24)':j.posisi===2?'linear-gradient(135deg,#94a3b8,#cbd5e1)':j.posisi===3?'linear-gradient(135deg,#b45309,#d97706)':'var(--bg-primary)',

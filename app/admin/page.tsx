@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { uploadResultImage, deleteResultImage } from '../actions'
 import { generatePoster } from '@/app/actions/generatePoster'
 
@@ -13,7 +14,13 @@ interface Ev {
   is_featured?: boolean; featured_until?: string|null; featured_package?: string|null; jenis_lomba?: string
   penyelenggara?: string; lokasi?: string; foto_hasil?: string[]|string|null
   jenis_burung?: string[]; biaya_daftar?: number|null; kontak?: string|null
-  kategori_kelas?: string|null; jarak_meter?: number|null; daftar_juara?: any[]|null
+  kategori_kelas?: string|null; jarak_meter?: number|null; daftar_juara?: unknown[]|null
+}
+interface Juara {
+  posisi: number; nama_burung: string; pemilik: string
+}
+interface KelasJuara {
+  kelas: string; juara: Juara[]
 }
 interface Sub {
   id: string; nama?: string|null; nomor_wa: string; kota?: string|null
@@ -252,9 +259,9 @@ export default function AdminPage() {
               <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 800, margin: 0 }}>⚙️ Admin Panel</h1>
               <p style={{ color: 'rgba(255,255,255,.7)', fontSize: 13, margin: 0 }}>GantangFinder Dashboard</p>
             </div>
-            <a href="/" style={{ color: 'rgba(255,255,255,.85)', fontSize: 13, textDecoration: 'none', background: 'rgba(255,255,255,.15)', padding: '8px 14px', borderRadius: 8, fontWeight: 600 }}>
+            <Link href="/" style={{ color: 'rgba(255,255,255,.85)', fontSize: 13, textDecoration: 'none', background: 'rgba(255,255,255,.15)', padding: '8px 14px', borderRadius: 8, fontWeight: 600 }}>
               ← Lihat Situs
-            </a>
+            </Link>
           </div>
 
           {/* Stats */}
@@ -630,8 +637,8 @@ export default function AdminPage() {
   )
 }
 
-function ManageJuaraModal({ ev, onClose, onSaved }: { ev: Ev, onClose: () => void, onSaved: (juara: any[]) => void }) {
-  const [juaraList, setJuaraList] = useState<any[]>(ev.daftar_juara || [])
+function ManageJuaraModal({ ev, onClose, onSaved }: { ev: Ev, onClose: () => void, onSaved: (juara: KelasJuara[]) => void }) {
+  const [juaraList, setJuaraList] = useState<KelasJuara[]>(ev.daftar_juara as KelasJuara[] || [])
   const [loading, setLoading] = useState(false)
 
   const addKelas = () => setJuaraList([...juaraList, { kelas: '', juara: [] }])
@@ -693,7 +700,7 @@ function ManageJuaraModal({ ev, onClose, onSaved }: { ev: Ev, onClose: () => voi
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {k.juara.map((j: any, ji: number) => (
+                {(k.juara as Array<Juara>).map((j, ji: number) => (
                   <div key={ji} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <div style={{ width: 40, textAlign: 'center', fontWeight: 'bold', color: '#64748b', fontSize: 14 }}>#{j.posisi}</div>
                     <input 
