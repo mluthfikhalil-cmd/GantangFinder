@@ -65,11 +65,12 @@ export default function AdminPage() {
   const [pwErr, setPwErr] = useState('')
   const [evs, setEvs] = useState<Ev[]>([])
   const [subs, setSubs] = useState<Sub[]>([])
+  const [orgs, setOrgs] = useState<{id:string; nama_lengkap:string; nomor_wa:string; email?:string; kota:string; status:string; created_at:string}[]>([])
   const [loading, setLoading] = useState(false)
   const [toggling, setToggling] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [uploading, setUploading] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'events'|'subscribers'>('events')
+  const [activeTab, setActiveTab] = useState<'events'|'subscribers'|'organizers'>('events')
   const [editEv, setEditEv] = useState<Ev | null>(null)
   const [managePhotosEv, setManagePhotosEv] = useState<Ev | null>(null)
   const [manageJuaraEv, setManageJuaraEv] = useState<Ev | null>(null)
@@ -104,6 +105,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!auth) return
     loadData()
+    loadOrgs()
   }, [auth])
 
   async function loadData() {
@@ -119,6 +121,25 @@ export default function AdminPage() {
       setSubs(Array.isArray(subData) ? subData : [])
     } catch { /* ignore */ }
     setLoading(false)
+  }
+
+  async function loadOrgs() {
+    try {
+      const res = await fetch(`${SB_URL}/rest/v1/organizers?select=*&order=created_at.desc`, { headers: H })
+      const data = await res.json()
+      setOrgs(Array.isArray(data) ? data : [])
+    } catch { /* ignore */ }
+  }
+
+  async function updateOrgStatus(id: string, status: string) {
+    const res = await fetch(`${SB_URL}/rest/v1/organizers?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
+    if (res.ok) {
+      setOrgs(prev => prev.map(o => o.id === id ? { ...o, status } : o))
+    }
   }
 
   async function toggleFeatured(ev: Ev, days: number = 7) {
@@ -280,10 +301,10 @@ export default function AdminPage() {
 
           {/* Tab nav */}
           <div style={{ display: 'flex', gap: 4 }}>
-            {(['events', 'subscribers'] as const).map(t => (
+            {(['events', 'subscribers', 'organizers'] as const).map(t => (
               <button key={t} onClick={() => setActiveTab(t)}
                 style={{ padding: '10px 20px', borderRadius: '10px 10px 0 0', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', border: 'none', background: activeTab === t ? '#fff' : 'rgba(255,255,255,.15)', color: activeTab === t ? '#16a34a' : 'rgba(255,255,255,.8)' }}>
-                {t === 'events' ? '📋 Event' : '📱 Subscriber'}
+                {t === 'events' ? '📋 Event' : t === 'subscribers' ? '📱 Subscriber' : '👥 Organizer'}
               </button>
             ))}
           </div>
