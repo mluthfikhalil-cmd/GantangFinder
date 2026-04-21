@@ -30,19 +30,62 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col relative font-sans">
         
-        {/* --- ANIMATED BIRD BACKGROUND --- */}
+        {/* --- DECORATIVE BIRD BACKGROUND --- */}
         <div className="bg-bird-container" aria-hidden="true">
-          <svg className="bird-svg bird-small" style={{ top: '15%', animationDuration: '25s', animationDelay: '0s' }} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M23.99 6.124c-1.325-.71-3.03-.81-4.535-.295-.69.236-1.335.615-1.89 1.105-.555-.49-1.2-.87-1.89-1.105-1.505-.515-3.21-.415-4.535.295C9.82 6.81 8.635 8.335 8.32 10.12c-.06.34-.09.69-.09 1.04 0 2.39 1.535 4.425 3.665 5.165.255.09.525.15.8.185v2.49h2.6v-2.49c.275-.035.545-.095.8-.185 2.13-.74 3.665-2.775 3.665-5.165 0-.35-.03-.7-.09-1.04-.315-1.785-1.5-3.31-2.82-3.996z"/>
+          {/* Burung 1: Kecil, Cepat, Posisi Atas */}
+          <svg 
+            className="bird-svg bird-small" 
+            style={{ top: '10%', animationDuration: '18s', animationDelay: '0s' }}
+            viewBox="0 0 24 24" 
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M22 12C22 12 18 8 12 8C6 8 2 12 2 12C2 12 6 16 12 16C18 16 22 12 22 12Z" />
+            <path d="M12 8C12 8 14 4 18 4C20 4 22 6 22 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none"/>
           </svg>
-          <svg className="bird-svg bird-medium" style={{ top: '40%', animationDuration: '35s', animationDelay: '12s' }} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M23.5 6.5c-2-2-5-3-8-3c-3 0-6 1-8 3c-2 2-3 5-3 8c0 3 1 6 3 8c2 2 5 3 8 3c3 0 6-1 8-3c2-2 3-5 3-8C26.5 11.5 25.5 8.5 23.5 6.5z M12 18c-3.3 0-6-2.7-6-6s2.7-6 6-6s6 2.7 6 6S15.3 18 12 18z"/>
+
+          {/* Burung 2: Sedang, Lambat, Posisi Tengah */}
+          <svg 
+            className="bird-svg bird-medium" 
+            style={{ top: '35%', animationDuration: '28s', animationDelay: '7s' }}
+            viewBox="0 0 24 24" 
+            xmlns="http://www.w3.org/2000/svg"
+          >
+             <path d="M22 12C22 12 18 8 12 8C6 8 2 12 2 12C2 12 6 16 12 16C18 16 22 12 22 12Z" />
+             <path d="M12 8C12 8 10 2 6 2C4 2 2 4 2 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none"/>
           </svg>
-          <svg className="bird-svg bird-large" style={{ top: '70%', animationDuration: '45s', animationDelay: '5s' }} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M23.99 6.124c-1.325-.71-3.03-.81-4.535-.295-.69.236-1.335.615-1.89 1.105-.555-.49-1.2-.87-1.89-1.105-1.505-.515-3.21-.415-4.535.295C9.82 6.81 8.635 8.335 8.32 10.12c-.06.34-.09.69-.09 1.04 0 2.39 1.535 4.425 3.665 5.165.255.09.525.15.8.185v2.49h2.6v-2.49c.275-.035.545-.095.8-.185 2.13-.74 3.665-2.775 3.665-5.165 0-.35-.03-.7-.09-1.04-.315-1.785-1.5-3.31-2.82-3.996z"/>
+
+          {/* Burung 3: Besar, Sangat Lambat, Posisi Bawah */}
+          <svg 
+            className="bird-svg bird-large" 
+            style={{ top: '65%', animationDuration: '40s', animationDelay: '3s' }}
+            viewBox="0 0 24 24" 
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M22 12C22 12 18 8 12 8C6 8 2 12 2 12C2 12 6 16 12 16C18 16 22 12 22 12Z" />
+            <path d="M12 8C12 8 14 14 18 14C20 14 22 12 22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none"/>
+          </svg>
+
+          {/* Burung 4: Kecil, Cepat, Posisi Acak */}
+          <svg 
+            className="bird-svg bird-small" 
+            style={{ top: '20%', animationDuration: '22s', animationDelay: '12s' }}
+            viewBox="0 0 24 24" 
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M22 12C22 12 18 8 12 8C6 8 2 12 2 12C2 12 6 16 12 16C18 16 22 12 22 12Z" />
+          </svg>
+          
+          {/* Burung 5: Sedang, Posisi Rendah */}
+          <svg 
+            className="bird-svg bird-medium" 
+            style={{ top: '80%', animationDuration: '30s', animationDelay: '15s' }}
+            viewBox="0 0 24 24" 
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M22 12C22 12 18 8 12 8C6 8 2 12 2 12C2 12 6 16 12 16C18 16 22 12 22 12Z" />
           </svg>
         </div>
-        {/* --- END ANIMATED BACKGROUND --- */}
+        {/* --- END DECORATIVE BACKGROUND --- */}
 
         {/* Konten Utama Website */}
         <div className="relative z-10 flex-1 flex flex-col">
