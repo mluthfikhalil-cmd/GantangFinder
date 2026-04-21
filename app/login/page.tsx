@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [nomor_wa, setNomorWa] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
@@ -18,16 +19,24 @@ export default function LoginPage() {
       const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nomor_wa }),
+        body: JSON.stringify({ email, password }),
       })
       const data = await res.json()
 
       if (res.ok && data.success) {
         // Save to localStorage
-        localStorage.setItem('gf_organizer', JSON.stringify(data.organizer))
+        localStorage.setItem('gf_user', JSON.stringify(data.user))
         localStorage.setItem('gf_token', data.token)
         setMsg({ type: 'success', text: 'Login berhasil!' })
-        setTimeout(() => router.push('/dashboard'), 800)
+        
+        // Redirect based on role
+        setTimeout(() => {
+          if (data.user.role === 'organizer') {
+            router.push('/dashboard')
+          } else {
+            router.push('/dashboard')
+          }
+        }, 800)
       } else {
         setMsg({ type: 'error', text: data.error })
       }
@@ -39,31 +48,46 @@ export default function LoginPage() {
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '14px 16px', borderRadius: 12, border: '1.5px solid #e2e8f0',
-    fontSize: 16, fontFamily: 'inherit', outline: 'none', textAlign: 'center', letterSpacing: 2,
+    fontSize: 16, fontFamily: 'inherit', outline: 'none',
   }
 
   return (
     <div style={{ minHeight: '100vh', background: '#f0fdf4', fontFamily: 'inherit', display: 'flex', alignItems: 'center' }}>
-      <div style={{ maxWidth: 380, margin: '0 auto', padding: '32px 16px', width: '100%' }}>
+      <div style={{ maxWidth: 400, margin: '0 auto', padding: '32px 16px', width: '100%' }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ fontSize: 48, marginBottom: 8 }}>🔑</div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>Login Organizer</h1>
-          <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>Masuk dengan nomor WhatsApp</p>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>Login ke GantangFinder</h1>
+          <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>Masuk dengan email dan password</p>
         </div>
 
         {/* Form */}
         <div style={{ background: '#fff', borderRadius: 16, padding: '28px 24px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #e2e8f0' }}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 6, textAlign: 'center' }}>
-                Nomor WhatsApp
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 6 }}>
+                Email
               </label>
               <input
                 style={inputStyle}
-                placeholder="08xxxxxxxxxx"
-                value={nomor_wa}
-                onChange={e => setNomorWa(e.target.value)}
+                type="email"
+                placeholder="email@contoh.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 6 }}>
+                Password
+              </label>
+              <input
+                style={inputStyle}
+                type="password"
+                placeholder="Masukkan password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
                 required
               />
             </div>

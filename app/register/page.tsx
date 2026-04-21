@@ -3,7 +3,15 @@ import { useState } from 'react'
 import Link from 'next/link'
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({ nama_lengkap: '', nomor_wa: '', email: '', kota: '' })
+  const [form, setForm] = useState({ 
+    nama_lengkap: '', 
+    nomor_wa: '', 
+    email: '', 
+    kota: '', 
+    password: '', 
+    confirmPassword: '', 
+    role: '' as 'organizer' | 'peserta' | ''
+  })
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
@@ -11,6 +19,18 @@ export default function RegisterPage() {
     e.preventDefault()
     setLoading(true)
     setMsg(null)
+
+    if (!form.role) {
+      setMsg({ type: 'error', text: 'Pilih role terlebih dahulu' })
+      setLoading(false)
+      return
+    }
+
+    if (form.password !== form.confirmPassword) {
+      setMsg({ type: 'error', text: 'Password tidak cocok' })
+      setLoading(false)
+      return
+    }
 
     try {
       const res = await fetch('/api/register', {
@@ -21,7 +41,7 @@ export default function RegisterPage() {
       const data = await res.json()
       if (res.ok) {
         setMsg({ type: 'success', text: data.message })
-        setForm({ nama_lengkap: '', nomor_wa: '', email: '', kota: '' })
+        setForm({ nama_lengkap: '', nomor_wa: '', email: '', kota: '', password: '', confirmPassword: '', role: '' })
       } else {
         setMsg({ type: 'error', text: data.error })
       }
@@ -42,17 +62,41 @@ export default function RegisterPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f0fdf4', fontFamily: 'inherit' }}>
-      <div style={{ maxWidth: 440, margin: '0 auto', padding: '32px 16px' }}>
+      <div style={{ maxWidth: 480, margin: '0 auto', padding: '32px 16px' }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>🏟️</div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>Daftar Jadi Organizer</h1>
-          <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>Buat dankelola event lomba burung kicau</p>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>Daftar di GantangFinder</h1>
+          <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>Pilih role sesuai kebutuhan Anda</p>
+        </div>
+
+        {/* Role Selection */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+          {[
+            { value: 'peserta', emoji: '🐦', title: 'Peserta', desc: 'Ikut lomba & kejar leaderboard' },
+            { value: 'organizer', emoji: '🏆', title: 'Organizer', desc: 'Buat & kelola event lomba' },
+          ].map(r => (
+            <button
+              key={r.value}
+              type="button"
+              onClick={() => setForm({ ...form, role: r.value as 'organizer' | 'peserta' })}
+              style={{
+                padding: '16px 12px', borderRadius: 14, border: `2px solid ${form.role === r.value ? '#16a34a' : '#e2e8f0'}`,
+                background: form.role === r.value ? '#f0fdf4' : '#fff', cursor: 'pointer', textAlign: 'center',
+                transition: 'all 0.2s', fontFamily: 'inherit',
+                boxShadow: form.role === r.value ? '0 4px 12px rgba(22,163,74,0.15)' : 'none',
+              }}
+            >
+              <div style={{ fontSize: 28, marginBottom: 6 }}>{r.emoji}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: form.role === r.value ? '#16a34a' : '#374151' }}>{r.title}</div>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{r.desc}</div>
+            </button>
+          ))}
         </div>
 
         {/* Form */}
         <div style={{ background: '#fff', borderRadius: 16, padding: '24px 20px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #e2e8f0' }}>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
               <label style={labelStyle}>Nama Lengkap *</label>
               <input
@@ -77,13 +121,14 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label style={labelStyle}>Email (opsional)</label>
+              <label style={labelStyle}>Email *</label>
               <input
                 style={inputStyle}
                 type="email"
                 placeholder="email@contoh.com"
                 value={form.email}
                 onChange={e => setForm({ ...form, email: e.target.value })}
+                required
               />
             </div>
 
@@ -98,6 +143,45 @@ export default function RegisterPage() {
               />
             </div>
 
+            <div>
+              <label style={labelStyle}>Password *</label>
+              <input
+                style={inputStyle}
+                type="password"
+                placeholder="Minimal 6 karakter"
+                value={form.password}
+                onChange={e => setForm({ ...form, password: e.target.value })}
+                required
+                minLength={6}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Konfirmasi Password *</label>
+              <input
+                style={inputStyle}
+                type="password"
+                placeholder="Masukkan password lagi"
+                value={form.confirmPassword}
+                onChange={e => setForm({ ...form, confirmPassword: e.target.value })}
+                required
+              />
+            </div>
+
+            {/* Organizer info */}
+            {form.role === 'organizer' && (
+              <div style={{
+                padding: '16px',
+                background: '#f0fdf4',
+                borderRadius: 12,
+                border: '1.5px solid #bbf7d0',
+              }}>
+                <p style={{ fontSize: 13, color: '#15803d', margin: 0, fontWeight: 600 }}>
+                  🏆 Sebagai Organizer, akun Anda akan menunggu persetujuan admin sebelum bisa membuat event.
+                </p>
+              </div>
+            )}
+
             {msg && (
               <div style={{
                 padding: '12px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600,
@@ -111,12 +195,13 @@ export default function RegisterPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !form.role}
               style={{
-                width: '100%', padding: 14, background: loading ? '#94a3b8' : 'linear-gradient(135deg,#16a34a,#15803d)',
+                width: '100%', padding: 14, 
+                background: loading || !form.role ? '#94a3b8' : 'linear-gradient(135deg,#16a34a,#15803d)',
                 color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700,
-                fontFamily: 'inherit', cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: loading ? 'none' : '0 4px 14px rgba(22,163,74,0.3)',
+                fontFamily: 'inherit', cursor: loading || !form.role ? 'not-allowed' : 'pointer',
+                boxShadow: loading || !form.role ? 'none' : '0 4px 14px rgba(22,163,74,0.3)',
                 transition: 'all 0.2s',
               }}
             >
@@ -130,10 +215,6 @@ export default function RegisterPage() {
           <Link href="/" style={{ color: '#64748b', textDecoration: 'none', fontWeight: 600 }}>← Beranda</Link>
           <Link href="/login" style={{ color: '#16a34a', textDecoration: 'none', fontWeight: 600 }}>Sudah punya akun? Login</Link>
         </div>
-
-        <p style={{ textAlign: 'center', fontSize: 11, color: '#94a3b8', marginTop: 16 }}>
-          Setelah daftar, akun akan dicek oleh admin dalam 1x24 jam sebelum bisa membuat event.
-        </p>
       </div>
     </div>
   )

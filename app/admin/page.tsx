@@ -65,12 +65,14 @@ export default function AdminPage() {
   const [pwErr, setPwErr] = useState('')
   const [evs, setEvs] = useState<Ev[]>([])
   const [subs, setSubs] = useState<Sub[]>([])
-  const [orgs, setOrgs] = useState<{id:string; nama_lengkap:string; nomor_wa:string; email?:string; kota:string; status:string; created_at:string}[]>([])
+  const [users, setUsers] = useState<{id:string; nama_lengkap:string; nomor_wa:string; email?:string; kota:string; role:string; status:string; payment_proof_url?:string; created_at:string}[]>([])
   const [loading, setLoading] = useState(false)
   const [toggling, setToggling] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [uploading, setUploading] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'events'|'subscribers'|'organizers'>('events')
+  const [activeTab, setActiveTab] = useState<'events'|'subscribers'|'users'>('events')
+  const [userFilter, setUserFilter] = useState<'all'|'organizer'|'peserta'>('all')
+  const [updatingUser, setUpdatingUser] = useState<string | null>(null)
   const [editEv, setEditEv] = useState<Ev | null>(null)
   const [managePhotosEv, setManagePhotosEv] = useState<Ev | null>(null)
   const [manageJuaraEv, setManageJuaraEv] = useState<Ev | null>(null)
@@ -105,7 +107,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!auth) return
     loadData()
-    loadOrgs()
+    loadUsers()
   }, [auth])
 
   async function loadData() {
@@ -123,23 +125,32 @@ export default function AdminPage() {
     setLoading(false)
   }
 
-  async function loadOrgs() {
+  async function loadUsers() {
     try {
-      const res = await fetch(`${SB_URL}/rest/v1/organizers?select=*&order=created_at.desc`, { headers: H })
+      const res = await fetch(`${SB_URL}/rest/v1/users?select=*&order=created_at.desc`, { headers: H })
       const data = await res.json()
-      setOrgs(Array.isArray(data) ? data : [])
+      setUsers(Array.isArray(data) ? data : [])
     } catch { /* ignore */ }
   }
 
-  async function updateOrgStatus(id: string, status: string) {
-    const res = await fetch(`${SB_URL}/rest/v1/organizers?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: { ...H, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    })
-    if (res.ok) {
-      setOrgs(prev => prev.map(o => o.id === id ? { ...o, status } : o))
+  async function updateUserStatus(id: string, status: string) {
+    setUpdatingUser(id)
+    try {
+      const res = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PASS}` },
+        body: JSON.stringify({ user_id: id, status }),
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setUsers(prev => prev.map(u => u.id === id ? { ...u, status } : u))
+      } else {
+        alert(data.error || 'Gagal update status')
+      }
+    } catch {
+      alert('Gagal update status')
     }
+    setUpdatingUser(null)
   }
 
   async function toggleFeatured(ev: Ev, days: number = 7) {
@@ -290,7 +301,7 @@ export default function AdminPage() {
             {[
               { v: evs.length, l: 'Total Event', c: '#fff' },
               { v: featuredCount, l: 'Featured Aktif', c: '#fbbf24' },
-              { v: subs.length, l: 'Subscriber WA', c: '#86efac' },
+              { v: users.length, l: 'Total Users', c: '#86efac' },
             ].map(s => (
               <div key={s.l} style={{ background: 'rgba(255,255,255,.12)', borderRadius: 10, padding: '10px 16px' }}>
                 <div style={{ color: s.c, fontSize: 22, fontWeight: 800 }}>{loading ? '—' : s.v}</div>
@@ -301,10 +312,10 @@ export default function AdminPage() {
 
           {/* Tab nav */}
           <div style={{ display: 'flex', gap: 4 }}>
-            {(['events', 'subscribers', 'organizers'] as const).map(t => (
+            {(['events', 'subscribers', 'users'] as const).map(t => (
               <button key={t} onClick={() => setActiveTab(t)}
                 style={{ padding: '10px 20px', borderRadius: '10px 10px 0 0', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', border: 'none', background: activeTab === t ? '#fff' : 'rgba(255,255,255,.15)', color: activeTab === t ? '#16a34a' : 'rgba(255,255,255,.8)' }}>
-                {t === 'events' ? '📋 Event' : t === 'subscribers' ? '📱 Subscriber' : '👥 Organizer'}
+                {t === 'events' ? '📋 Event' : t === 'subscribers' ? '📱 Subscriber' : '👥 Users'}
               </button>
             ))}
           </div>
@@ -486,6 +497,97 @@ export default function AdminPage() {
               </div>
             </div>
           </>
+        ) : activeTab === 'users' ? (
+          /* Users Tab */
+          <div style={{ background: '#fff', borderRadius: 16, padding: 20, border: '1.5px solid #f1f5f9', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div>
+                <h2 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: 0 }}>👥 Semua User</h2>
+                <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>{users.length} user terdaftar</p>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={loadUsers} style={{ padding: '7px 12px', background: '#f1f5f9', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', color: '#64748b' }}>🔄</button>
+              </div>
+            </div>
+
+            {/* Filter */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              {(['all', 'organizer', 'peserta'] as const).map(f => (
+                <button key={f} onClick={() => setUserFilter(f)}
+                  style={{ padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', border: 'none', background: userFilter === f ? '#16a34a' : '#f1f5f9', color: userFilter === f ? '#fff' : '#64748b' }}>
+                  {f === 'all' ? 'Semua' : f === 'organizer' ? '🎯 Organizer' : '🐦 Peserta'}
+                </button>
+              ))}
+            </div>
+
+            {users.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
+                <div style={{ fontSize: 40 }}>👥</div>
+                <p style={{ marginTop: 8 }}>Belum ada user.</p>
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
+                      {['Nama', 'Nomor WA', 'Kota', 'Role', 'Status', 'Tanggal Daftar', 'Aksi'].map(h => (
+                        <th key={h} style={{ padding: '8px 12px', textAlign: h === 'Aksi' ? 'right' : 'left', color: '#64748b', fontWeight: 700, whiteSpace: 'nowrap', fontSize: 12 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.filter(u => userFilter === 'all' || u.role === userFilter).map(u => {
+                      const statusColor = u.status === 'active' ? '#15803d' : u.status === 'pending_approval' ? '#d97706' : '#dc2626'
+                      const statusBg = u.status === 'active' ? '#dcfce7' : u.status === 'pending_approval' ? '#fef3c7' : '#fef2f2'
+                      const roleColor = u.role === 'organizer' ? '#1d4ed8' : '#7c3aed'
+                      const roleBg = u.role === 'organizer' ? '#eff6ff' : '#f5f3ff'
+                      return (
+                        <tr key={u.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                          <td style={{ padding: '10px 12px', color: '#0f172a', fontWeight: 600 }}>{u.nama_lengkap || '—'}</td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <a href={`https://wa.me/${u.nomor_wa}`} target="_blank" rel="noopener noreferrer"
+                              style={{ color: '#16a34a', textDecoration: 'none', fontFamily: 'monospace', fontWeight: 700 }}>
+                              {u.nomor_wa}
+                            </a>
+                          </td>
+                          <td style={{ padding: '10px 12px', color: '#64748b' }}>{u.kota || '—'}</td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <span style={{ background: roleBg, color: roleColor, padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700 }}>
+                              {u.role === 'organizer' ? '🎯 Org' : '🐦 Peserta'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <span style={{ background: statusBg, color: statusColor, padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700 }}>
+                              {u.status === 'pending_approval' ? '⏳ Pending' : u.status === 'active' ? '✅ Aktif' : '❌ Ditolak'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px 12px', color: '#94a3b8', whiteSpace: 'nowrap' }}>{fmtDate(u.created_at)}</td>
+                          <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                            {u.role === 'organizer' && u.status === 'pending_approval' && (
+                              <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                                <button
+                                  onClick={() => updateUserStatus(u.id, 'active')}
+                                  disabled={updatingUser === u.id}
+                                  style={{ padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700, background: '#dcfce7', color: '#15803d', border: 'none', cursor: updatingUser === u.id ? 'not-allowed' : 'pointer', opacity: updatingUser === u.id ? .6 : 1 }}>
+                                  {updatingUser === u.id ? '⏳' : '✅'} Approve
+                                </button>
+                                <button
+                                  onClick={() => updateUserStatus(u.id, 'rejected')}
+                                  disabled={updatingUser === u.id}
+                                  style={{ padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700, background: '#fef2f2', color: '#dc2626', border: 'none', cursor: updatingUser === u.id ? 'not-allowed' : 'pointer', opacity: updatingUser === u.id ? .6 : 1 }}>
+                                  ❌ Tolak
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         ) : (
           /* Subscribers Tab */
           <div style={{ background: '#fff', borderRadius: 16, padding: 20, border: '1.5px solid #f1f5f9', boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}>
