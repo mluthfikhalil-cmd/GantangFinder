@@ -21,14 +21,18 @@ async function supabaseFetch(endpoint: string, options: RequestInit) {
 // 1. Ambil Feed (Pagination sederhana)
 export async function getFeed(page = 1, limit = 10) {
   const from = (page - 1) * limit;
-  const to = from + limit - 1;
 
+  // Gunakan limit & offset yang benar untuk PostgREST
   const res = await supabaseFetch(
-    `posts?select=*,users(nama_lengkap,nomor_wa)&order=created_at.desc&range=${from}.${to}`,
+    `posts?select=*,users(nama_lengkap,nomor_wa)&order=created_at.desc&limit=${limit}&offset=${from}`,
     { method: 'GET' }
   );
 
-  if (!res.ok) return { success: false, data: [] };
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: 'Network error or invalid query' }));
+    console.error('Fetch Feed Error:', err);
+    return { success: false, data: [], error: err.message };
+  }
   
   const data = await res.json();
   return { success: true, data };
@@ -40,33 +44,38 @@ export async function createPost(formData: FormData) {
   const content = formData.get('content') as string;
   const type = formData.get('type') as string || 'harian';
   const imageUrl = formData.get('image_url') as string | null;
-  const eventId = formData.get('event_id') as string | null;
+  const event_id = formData.get('event_id') as string | null;
   
-  console.log('Creating post with:', { userId, content, type, imageUrl, eventId }); // Debug log
+  console.log('Creating post with:', { userId, content, type, imageUrl, event_id });
 
   if (!userId || !content) {
-    console.error('Missing data:', { userId, content });
     return { success: false, message: 'Data tidak lengkap. User ID dan Konten wajib diisi.' };
   }
 
-  const payload = {
+  // Penting: Pastikan kolom sesuai dengan database (post_type, user_id, dll)
+  const payload: any = {
     user_id: userId,
-    content,
+    content: content,
     post_type: type,
-    image_url: imageUrl,
-    event_id: eventId,
     likes_count: 0
   };
 
+  // Opsional: Hanya tambahkan jika ada nilainya
+  if (imageUrl) payload.image_url = imageUrl;
+  if (event_id) payload.event_id = event_id;
+
   const res = await supabaseFetch('posts', {
     method: 'POST',
+    headers: {
+      'Prefer': 'return=representation'
+    },
     body: JSON.stringify(payload)
   });
 
   if (!res.ok) {
-    const err = await res.json();
-    console.error('Supabase Error:', err);
-    return { success: false, message: `Gagal membuat post: ${err.message || 'Unknown error'}` };
+    const err = await res.json().catch(() => ({ message: 'Gagal menghubungi database' }));
+    console.error('Supabase Post Error:', err);
+    return { success: false, message: `Gagal membuat post: ${err.message || err.hint || 'Terjadi kesalahan di server database.'}` };
   }
 
   revalidatePath('/feed');
