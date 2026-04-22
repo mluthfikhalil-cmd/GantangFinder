@@ -36,7 +36,7 @@ export default function Home() {
   const [evs, setEvs] = useState<Ev[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
-  const [tab, setTab] = useState<'kicau'|'merpati'>('kicau')
+  const [tab, setTab] = useState<'kicau'|'merpati'|'rooster'>('kicau')
   const [search, setSearch] = useState('')
   const [kota, setKota] = useState('')
   const [level, setLevel] = useState('')
@@ -85,6 +85,7 @@ export default function Home() {
     if (tab==='kicau' && level && e.level_event !== level) return false
     if (tab==='merpati' && katMer && e.kategori_merpati !== katMer) return false
     if (tab==='merpati' && kelas && e.kategori_kelas !== kelas) return false
+    if (tab==='rooster') return e.jenis_lomba === 'rooster' || e.jenis_lomba === undefined
     return true
   })
   const now = new Date()
@@ -103,10 +104,10 @@ export default function Home() {
         <div style={{maxWidth:640,margin:'0 auto'}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
             <div style={{display:'flex',alignItems:'center',gap:12}}>
-              <div style={{width:44,height:44,borderRadius:12,background:'var(--accent-green)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22}}>{tab==='kicau'?'🐦':'🕊️'}</div>
+              <div style={{width:44,height:44,borderRadius:12,background:'var(--accent-green)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22}}>{tab==='kicau'?'🐦':tab==='merpati'?'🕊️':'🐓'}</div>
               <div>
                 <h1 style={{color:'var(--text-primary)',fontSize:24,fontWeight:800,margin:0, letterSpacing: '-0.5px'}}>GantangFinder</h1>
-                <p style={{color:'var(--text-secondary)',fontSize:13,margin:0}}>{tab==='kicau'?'Lomba Burung Kicau':'Lomba Merpati / Dara'} se-Indonesia</p>
+                <p style={{color:'var(--text-secondary)',fontSize:13,margin:0}}>{tab==='kicau'?'Lomba Burung Kicau':tab==='merpati'?'Lomba Merpati / Dara':'Manajemen Ayam Jago'} se-Indonesia</p>
               </div>
             </div>
             <button onClick={toggleTheme} style={{width: 36, height: 36, borderRadius: '50%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18}}>
@@ -123,9 +124,9 @@ export default function Home() {
           </div>
           {/* Tab Toggle */}
           <div style={{display:'flex',gap:8, background: 'var(--bg-secondary)', padding: 4, borderRadius: 12}}>
-            {(['kicau','merpati'] as const).map(t=>(
+            {(['kicau','merpati','rooster'] as const).map(t=>(
               <button key={t} onClick={()=>{setTab(t);setLevel('');setKatMer('');setKelas('')}} style={{padding:'8px 16px',borderRadius:8,fontSize:14,fontWeight:700,fontFamily:'inherit',cursor:'pointer',border:'none',background:tab===t?'var(--tab-active-bg)':'transparent',color:tab===t?'var(--tab-active-text)':'var(--text-secondary)',flex:1}}>
-                {t==='kicau'?'🐦 Kicau':'🕊️ Merpati'}
+                {t==='kicau'?'🐦 Kicau':t==='merpati'?'🕊️ Merpati':'🐓 Ayam Jago'}
               </button>
             ))}
           </div>
@@ -140,11 +141,15 @@ export default function Home() {
             <input value={kota} onChange={e=>setKota(e.target.value)} placeholder="📍 Kota..." style={{flex:1,padding:'9px 12px',background:'var(--bg-secondary)', color:'var(--text-primary)', border:'1px solid var(--border-color)',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
           </div>
           <div className="tab-content" style={{display:'flex',gap:6,overflowX:'auto', paddingBottom: 4}}>
-            {tab==='kicau' ? ['','Latber','Latpres','Regional','Nasional'].map(l=>btn(level===l,l||'Semua',()=>setLevel(l))) : (
+            {tab==='kicau' ? ['','Latber','Latpres','Regional','Nasional'].map(l=>btn(level===l,l||'Semua',()=>setLevel(l))) : tab==='merpati' ? (
               <>
                 {['','sprint','kolong','pos','tinggi bebas'].map(k=>btn(katMer===k,k?k.charAt(0).toUpperCase()+k.slice(1):'Semua',()=>setKatMer(k),'var(--banner-text)'))}
                 <div style={{width: 1, background: 'var(--border-color)'}}></div>
                 {['','Junior','Utama','Galatama'].map(k=>btn(kelas===k,k||'Semua Kelas',()=>setKelas(k),'#7c3aed'))}
+              </>
+            ) : (
+              <>
+                <button onClick={()=>window.location.href='/birds?tab=rooster'} style={{padding:'8px 16px',borderRadius:8,fontSize:13,fontWeight:600,background:'var(--accent-green)',color:'#fff',border:'none',cursor:'pointer',flex:1}}>🐓 Buka Manager</button>
               </>
             )}
           </div>
@@ -298,7 +303,7 @@ function AddModal({tab,onClose,onSaved}:{tab:string,onClose:()=>void,onSaved:(e:
     <input name={name} type={type} placeholder={placeholder} style={{width:'100%',padding:'11px 14px',background:'var(--bg-primary)',border:'1px solid var(--border-color)',color:'var(--text-primary)',borderRadius:10,fontSize:14,fontFamily:'inherit',outline:'none'}}/></div>
   )
 
-  const birdList = tab==='merpati' ? BIRDS_MER : BIRDS
+  const birdList = tab==='merpati' ? BIRDS_MER : tab==='rooster' ? [] : BIRDS
 
   return (
     <>
@@ -306,7 +311,7 @@ function AddModal({tab,onClose,onSaved}:{tab:string,onClose:()=>void,onSaved:(e:
       <div className="modal-content animate-slide-up" style={{position:'fixed',bottom:0,left:0,right:0,background:'var(--bg-primary)',borderRadius:'24px 24px 0 0',zIndex:51,maxHeight:'90vh',overflowY:'auto',boxShadow:'var(--shadow)'}}>
         <div style={{display:'flex',justifyContent:'center',padding:'12px 0 0'}}><div style={{width:40,height:4,background:'var(--border-color)',borderRadius:2}}/></div>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 24px 0'}}>
-          <h2 style={{fontSize:18,fontWeight:800,color:'var(--text-primary)'}}>{tab==='kicau'?'🐦':'🕊️'} Tambah {tab==='kicau'?'Event Kicau':'Event Merpati'}</h2>
+          <h2 style={{fontSize:18,fontWeight:800,color:'var(--text-primary)'}}>{tab==='kicau'?'🐦':tab==='merpati'?'🕊️':'🐓'} Tambah {tab==='kicau'?'Event Kicau':tab==='merpati'?'Event Merpati':'Ayam Jago'}</h2>
           <button onClick={onClose} style={{background:'var(--bg-secondary)',border:'none',borderRadius:'50%',width:36,height:36,cursor:'pointer',fontSize:18,color:'var(--text-secondary)'}}>✕</button>
         </div>
         <form onSubmit={submit} style={{padding:'20px 24px 40px',display:'flex',flexDirection:'column',gap:14}}>
