@@ -247,9 +247,20 @@ button:active {
     opacity: 0.12;
   }
   100% {
-    transform: translateX(110vw) translateY(-15px) rotate(-5deg);
+    transform: translateX(110vw) translateY(5vh) rotate(-5deg);
     opacity: 0;
   }
+}
+
+/* ========================================
+   UTILITIES
+   ======================================== */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Opsional: Animasi Mengambang untuk elemen statis */
