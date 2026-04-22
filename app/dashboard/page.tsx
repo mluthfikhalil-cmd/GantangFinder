@@ -174,16 +174,17 @@ export default function DashboardPage() {
         ) : (
           <>
             {/* Peserta Dashboard */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
               {[
-                { label: 'Event Tersedia', val: events.length, emoji: '🎯' },
-                { label: 'Leaderboard', val: 'Top 10', emoji: '🏆' },
+                { label: 'Event', val: events.length, emoji: '🎯', href: '/dashboard' },
+                { label: 'Ayam Jago', val: 'Manager', emoji: '🐓', href: '/birds?tab=rooster' },
+                { label: 'Juara', val: 'Top 10', emoji: '🏆', href: '/leaderboard' },
               ].map(s => (
-                <Link key={s.label} href="/leaderboard" style={{ textDecoration: 'none' }}>
+                <Link key={s.label} href={s.href} style={{ textDecoration: 'none' }}>
                   <div style={{ ...cardStyle, textAlign: 'center' }}>
                     <div style={{ fontSize: 24 }}>{s.emoji}</div>
-                    <div style={{ fontSize: 24, fontWeight: 800, color: '#16a34a' }}>{s.val}</div>
-                    <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginTop: 2 }}>{s.label}</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#16a34a' }}>{s.val}</div>
+                    <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600, marginTop: 2 }}>{s.label}</div>
                   </div>
                 </Link>
               ))}

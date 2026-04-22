@@ -2,12 +2,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { createRooster, getRoosterProfile } from '@/app/actions/roosterActions'
 
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
-
-import { uploadBirdPhoto } from '@/app/actions'
 
 interface Bird {
   id: string
@@ -19,21 +18,6 @@ interface Bird {
   foto_burung?: string
 }
 
-interface BirdEvent {
-  id: string
-  bird_id: string
-  event_id: string
-  event_name: string
-  event_date: string
-  event_kota: string
-  event_jenis_burung: string
-  event_tingkat: string
-  kelas: string
-  posisi: number | null
-  points_earned: number
-  is_peserta_only: boolean
-}
-
 interface User {
   id: string
   nama_lengkap: string
@@ -41,29 +25,25 @@ interface User {
 }
 
 const JENIS_BURUNG_OPTIONS = [
-  'Lovebird', 'Kenari', 'Parkit', 'Murai Batu', 'Kacer', 'Skoci', 'B任提出',
-  'Anis Merah', 'Branjangan', 'Cucak Ijo', 'Cucak Jenggot', 'Ekek Geling',
-  'Hwaingu', 'Jalak', 'Kapodang', 'K核桃', 'Lemon Ikan', 'Merbah', 'Migrika',
-  'Og的事情', 'Pipit', 'Prenjak', 'Rajaapi', 'Sikatan', 'Tledekan', 'Tresnak',
-  'Walets', '其他',
+  'Lovebird', 'Kenari', 'Parkit', 'Murai Batu', 'Kacer', 'Skoci', 'Anis Merah', 'Branjangan', 'Cucak Ijo', 'Cucak Jenggot', 'Jalak', 'Prenjak', 'Sikatan', 'Lainnya'
 ]
 
 function fmtDate(d: string) {
   return d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 }
 
-export default function BirdsPage() {
+export default function PetManagementPage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
+  const [activeTab, setActiveTab] = useState<'bird' | 'rooster'>('bird')
+  
   const [birds, setBirds] = useState<Bird[]>([])
+  const [roosters, setRoosters] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
-  const [selectedBird, setSelectedBird] = useState<Bird | null>(null)
-  const [birdEvents, setBirdEvents] = useState<BirdEvent[]>([])
-
+  
   // Form state
-  const [form, setForm] = useState({ nama_burung: '', jenis_burung: '' })
-  const [file, setFile] = useState<File | null>(null)
+  const [form, setForm] = useState({ name: '', type: '' })
   const [submitting, setSubmitting] = useState(false)
   const [formErr, setFormErr] = useState('')
 
@@ -72,91 +52,92 @@ export default function BirdsPage() {
     if (!stored) { router.push('/login'); return }
     const u = JSON.parse(stored) as User
     setUser(u)
-    loadBirds(u.id)
+    loadAll(u.id)
+
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('tab') === 'rooster') setActiveTab('rooster')
   }, [router])
 
-  async function loadBirds(ownerId: string) {
+  async function loadAll(ownerId: string) {
     setLoading(true)
+    await Promise.all([loadBirds(ownerId), loadRoosters(ownerId)])
+    setLoading(false)
+  }
+
+  async function loadBirds(ownerId: string) {
     try {
       const res = await fetch(`${SB_URL}/rest/v1/birds?owner_id=eq.${ownerId}&select=*&order=created_at.desc`, { headers: H })
       const d = await res.json()
       setBirds(Array.isArray(d) ? d : [])
-    } catch { /* ignore */ }
-    setLoading(false)
+    } catch (e) { console.error(e) }
   }
 
-  async function loadBirdEvents(birdId: string) {
-    const res = await fetch(`${SB_URL}/rest/v1/bird_events?bird_id=eq.${birdId}&select=*&order=event_date.desc`, { headers: H })
-    const d = await res.json()
-    setBirdEvents(Array.isArray(d) ? d : [])
+  async function loadRoosters(ownerId: string) {
+    try {
+      const res = await fetch(`${SB_URL}/rest/v1/roosters?owner_id=eq.${ownerId}&select=*&order=created_at.desc`, { headers: H })
+      const d = await res.json()
+      setRoosters(Array.isArray(d) ? d : [])
+    } catch (e) { console.error(e) }
   }
 
-  async function handleAddBird(e: React.FormEvent) {
+  async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     if (!user) return
-    if (!form.nama_burung.trim() || !form.jenis_burung) {
-      setFormErr('Nama burung dan jenis wajib diisi')
+    if (!form.name.trim()) {
+      setFormErr('Nama wajib diisi')
       return
     }
+    
     setSubmitting(true)
     setFormErr('')
+
     try {
-      const res = await fetch('/api/birds', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, owner_id: user.id, owner_name: user.nama_lengkap }),
-      })
-      const data = await res.json()
-      if (res.ok && data.success) {
-        let finalBird = { ...data.bird, ...form, owner_id: user.id, owner_name: user.nama_lengkap }
-        if (file) {
-          const uploadRes = await uploadBirdPhoto(data.bird.id, file)
-          if (uploadRes.success) {
-            finalBird.foto_burung = uploadRes.url
-          } else {
-            alert('Bird tersimpan, tapi foto gagal diupload: ' + uploadRes.error)
-          }
+      if (activeTab === 'bird') {
+        const res = await fetch('/api/birds', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nama_burung: form.name, jenis_burung: form.type, owner_id: user.id, owner_name: user.nama_lengkap }),
+        })
+        if (res.ok) {
+          await loadBirds(user.id)
+          setForm({ name: '', type: '' })
+          setShowAdd(false)
+        } else {
+          setFormErr('Gagal menambahkan burung')
         }
-        setBirds(prev => [finalBird, ...prev])
-        setForm({ nama_burung: '', jenis_burung: '' })
-        setFile(null)
-        setShowAdd(false)
       } else {
-        setFormErr(data.error || 'Gagal menambahkan bird')
+        const formData = new FormData()
+        formData.append('owner_id', user.id)
+        formData.append('name', form.name)
+        formData.append('breed', form.type)
+        
+        const res = await createRooster(formData)
+        if (res.success) {
+          await loadRoosters(user.id)
+          setForm({ name: '', type: '' })
+          setShowAdd(false)
+        } else {
+          setFormErr(res.message || 'Gagal menambahkan ayam')
+        }
       }
-    } catch {
+    } catch (err) {
       setFormErr('Terjadi kesalahan')
     }
     setSubmitting(false)
   }
 
-  async function handleDeleteBird(bird: Bird) {
-    if (!confirm(`Hapus bird "${bird.nama_burung}"? Event history akan tetap tersimpan.`)) return
-    const res = await fetch(`/api/birds?id=${bird.id}&owner_id=${user?.id}`, { method: 'DELETE' })
-    if (res.ok) {
-      setBirds(prev => prev.filter(b => b.id !== bird.id))
-      if (selectedBird?.id === bird.id) setSelectedBird(null)
-    }
-  }
-
-  function openBirdDetail(bird: Bird) {
-    setSelectedBird(bird)
-    loadBirdEvents(bird.id)
-  }
-
-  const totalPoints = birdEvents.reduce((sum, e) => sum + (e.points_earned || 0), 0)
-
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'inherit' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit' }}>
+      
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', padding: '24px 16px 20px' }}>
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
             <Link href="/dashboard" style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: 20 }}>←</Link>
-            <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 800, margin: 0 }}>🐦 Bird Profiles</h1>
+            <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 800, margin: 0 }}>🛡️ Manajemen Peliharaan</h1>
           </div>
           <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, margin: '0 0 16px' }}>
-            Daftarkan burung lo untuk mulai kumpulkan poin di leaderboard!
+            Kelola profil Burung dan Ayam Jago lo di sini!
           </p>
           <button
             onClick={() => setShowAdd(v => !v)}
@@ -164,196 +145,117 @@ export default function BirdsPage() {
               padding: '10px 20px', background: '#fff', color: '#16a34a', border: 'none',
               borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
             }}>
-            {showAdd ? '✕ Batal' : '+ Tambah Bird'}
+            {showAdd ? '✕ Batal' : `+ Tambah ${activeTab === 'bird' ? 'Burung' : 'Ayam'}`}
           </button>
         </div>
       </div>
 
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '20px 16px' }}>
-        {/* Add Bird Form */}
+        
+        {/* Tab Selector */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20, background: 'var(--bg-secondary)', padding: 4, borderRadius: 12, border: '1px solid var(--border-color)' }}>
+          <button 
+            onClick={() => setActiveTab('bird')}
+            style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: activeTab === 'bird' ? 'var(--bg-primary)' : 'transparent', fontWeight: 700, fontSize: 13, color: activeTab === 'bird' ? 'var(--accent-green)' : 'var(--text-secondary)', cursor: 'pointer', boxShadow: activeTab === 'bird' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none' }}>
+            🐦 Burung
+          </button>
+          <button 
+            onClick={() => setActiveTab('rooster')}
+            style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: activeTab === 'rooster' ? 'var(--bg-primary)' : 'transparent', fontWeight: 700, fontSize: 13, color: activeTab === 'rooster' ? 'var(--accent-green)' : 'var(--text-secondary)', cursor: 'pointer', boxShadow: activeTab === 'rooster' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none' }}>
+            🐓 Ayam Jago
+          </button>
+        </div>
+
+        {/* Add Form */}
         {showAdd && (
-          <div style={{ background: '#fff', borderRadius: 14, padding: 20, border: '1.5px solid #e2e8f0', marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,.04)' }}>
-            <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 700, color: '#0f172a' }}>🐦 Tambah Bird Baru</h3>
-            <form onSubmit={handleAddBird} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Nama Burung</label>
-                <input
-                  value={form.nama_burung}
-                  onChange={e => setForm(p => ({ ...p, nama_burung: e.target.value }))}
-                  placeholder="cth: Lovebird Andika, Kacer Silver"
-                  style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Jenis Burung</label>
+          <div style={{ background: 'var(--bg-secondary)', borderRadius: 14, padding: 20, border: '1.5px solid var(--border-color)', marginBottom: 20 }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 700 }}>✨ Tambah {activeTab === 'bird' ? 'Burung' : 'Ayam'} Baru</h3>
+            <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <input
+                value={form.name}
+                onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                placeholder={`Nama ${activeTab === 'bird' ? 'Burung' : 'Ayam'}`}
+                style={{ width: '100%', padding: '10px 12px', border: '1.5px solid var(--border-color)', borderRadius: 10, background: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box' }}
+              />
+              {activeTab === 'bird' ? (
                 <select
-                  value={form.jenis_burung}
-                  onChange={e => setForm(p => ({ ...p, jenis_burung: e.target.value }))}
-                  style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}>
-                  <option value="">— Pilih Jenis —</option>
+                  value={form.type}
+                  onChange={e => setForm(p => ({ ...p, type: e.target.value }))}
+                  style={{ width: '100%', padding: '10px 12px', border: '1.5px solid var(--border-color)', borderRadius: 10, background: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box' }}>
+                  <option value="">— Pilih Jenis Burung —</option>
                   {JENIS_BURUNG_OPTIONS.map(j => <option key={j} value={j}>{j}</option>)}
                 </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Foto Burung (Opsional)</label>
+              ) : (
                 <input
-                  type="file"
-                  accept="image/*"
-                  onChange={e => setFile(e.target.files?.[0] || null)}
-                  style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 13, fontFamily: 'inherit' }}
+                  value={form.type}
+                  onChange={e => setForm(p => ({ ...p, type: e.target.value }))}
+                  placeholder="Ras/Breed (cth: Bangkok)"
+                  style={{ width: '100%', padding: '10px 12px', border: '1.5px solid var(--border-color)', borderRadius: 10, background: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box' }}
                 />
-              </div>
+              )}
               {formErr && <p style={{ color: '#dc2626', fontSize: 13, margin: 0 }}>{formErr}</p>}
               <button
                 type="submit"
                 disabled={submitting}
                 style={{
-                  padding: '12px', background: '#16a34a', color: '#fff', border: 'none',
-                  borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: submitting ? .7 : 1,
+                  padding: '12px', background: 'var(--accent-green)', color: '#fff', border: 'none',
+                  borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? .7 : 1,
                 }}>
-                {submitting ? '⏳ Menyimpan...' : '💾 Simpan Bird'}
+                {submitting ? '⏳ Menyimpan...' : '💾 Simpan Data'}
               </button>
             </form>
           </div>
         )}
 
-        {/* Bird List */}
+        {/* List Content */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>Memuat...</div>
-        ) : birds.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', background: '#fff', borderRadius: 14, border: '1.5px solid #e2e8f0' }}>
-            <div style={{ fontSize: 48 }}>🐦</div>
-            <p style={{ color: '#64748b', marginTop: 12 }}>Belum ada bird terdaftar.</p>
-            <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 4 }}>Klik "Tambah Bird" di atas untuk mulai!</p>
-          </div>
+          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-secondary)' }}>Memuat...</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {birds.map(bird => (
-              <div key={bird.id} style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,.04)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                  {bird.foto_burung ? (
-                    <img src={bird.foto_burung} alt={bird.nama_burung} style={{ width: 50, height: 50, borderRadius: 10, objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{ width: 50, height: 50, borderRadius: 10, background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>🐦</div>
-                  )}
+            {activeTab === 'bird' ? (
+              birds.length === 0 ? <p style={{ textAlign: 'center', py: 8 }}>Belum ada burung.</p> :
+              birds.map(b => (
+                <div key={b.id} style={{ background: 'var(--bg-secondary)', borderRadius: 14, padding: 16, border: '1px solid var(--border-color)', display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <div style={{ fontSize: 24 }}>🐦</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>{bird.nama_burung}</div>
-                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                      {bird.jenis_burung} • Ditambahkan {fmtDate(bird.created_at)}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button
-                      onClick={() => openBirdDetail(bird)}
-                      style={{ padding: '6px 12px', background: '#eff6ff', color: '#1d4ed8', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                      📊 Riwayat
-                    </button>
-                    <button
-                      onClick={() => handleDeleteBird(bird)}
-                      style={{ padding: '6px 10px', background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                      🗑️
-                    </button>
+                    <div style={{ fontWeight: 700 }}>{b.nama_burung}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{b.jenis_burung}</div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              roosters.length === 0 ? <p style={{ textAlign: 'center', py: 8 }}>Belum ada ayam jago.</p> :
+              roosters.map(r => (
+                <Link key={r.id} href={`/roosters/${r.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <div style={{ background: 'var(--bg-secondary)', borderRadius: 14, padding: 16, border: '1px solid var(--border-color)', display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <div style={{ fontSize: 24 }}>🐓</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700 }}>{r.name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.breed || 'Campuran'} • {r.weight_kg || '—'} kg</div>
+                    </div>
+                    <div style={{ background: 'var(--accent-green)', color: '#fff', padding: '4px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>Manager</div>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         )}
 
         {/* Leaderboard Link */}
         <div style={{ marginTop: 24, textAlign: 'center' }}>
-          <Link href="/leaderboard" style={{ color: '#16a34a', textDecoration: 'none', fontWeight: 700, fontSize: 14 }}>
+          <Link href="/leaderboard" style={{ color: 'var(--accent-green)', textDecoration: 'none', fontWeight: 700, fontSize: 14 }}>
             🏆 Lihat Leaderboard →
           </Link>
         </div>
       </div>
 
-      {/* Bird Detail Modal */}
-      {selectedBird && (
-        <>
-          <div onClick={() => setSelectedBird(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', backdropFilter: 'blur(4px)', zIndex: 100 }} />
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#fff', borderRadius: 20, width: '90%', maxWidth: 500, zIndex: 101, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,.2)', maxHeight: '80vh', overflow: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                {selectedBird.foto_burung ? (
-                  <img src={selectedBird.foto_burung} alt={selectedBird.nama_burung} style={{ width: 60, height: 60, borderRadius: 12, objectFit: 'cover' }} />
-                ) : (
-                  <div style={{ width: 60, height: 60, borderRadius: 12, background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🐦</div>
-                )}
-                <div>
-                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{selectedBird.nama_burung}</h2>
-                  <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>{selectedBird.jenis_burung}</p>
-                </div>
-              </div>
-              <button onClick={() => setSelectedBird(null)} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: '#94a3b8' }}>×</button>
-            </div>
-
-            <div style={{ background: '#f8fafc', borderRadius: 12, padding: '14px', marginBottom: 16, display: 'flex', gap: 16 }}>
-              <div style={{ textAlign: 'center', flex: 1 }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: '#16a34a' }}>{totalPoints}</div>
-                <div style={{ fontSize: 11, color: '#64748b' }}>Total Poin</div>
-              </div>
-              <div style={{ textAlign: 'center', flex: 1, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: '#1d4ed8' }}>{birdEvents.length}</div>
-                <div style={{ fontSize: 11, color: '#64748b' }}>Event Diikuti</div>
-              </div>
-              <div style={{ textAlign: 'center', flex: 1 }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: '#d97706' }}>{birdEvents.filter(e => e.posisi === 1).length}</div>
-                <div style={{ fontSize: 11, color: '#64748b' }}>Juara 1</div>
-              </div>
-            </div>
-
-            <h3 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Riwayat Event</h3>
-            {birdEvents.length === 0 ? (
-              <p style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>Belum ada event yang diikuti.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {birdEvents.map(ev => (
-                  <div key={ev.id} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 13, color: '#0f172a' }}>{ev.event_name}</div>
-                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
-                          {fmtDate(ev.event_date)} • {ev.event_kota || '—'} • {ev.event_tingkat}
-                        </div>
-                        {ev.kelas && <div style={{ fontSize: 11, color: '#94a3b8' }}>Kelas: {ev.kelas}</div>}
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        {ev.posisi ? (
-                          <span style={{ background: ev.posisi === 1 ? '#fef3c7' : '#f1f5f9', color: ev.posisi === 1 ? '#d97706' : '#64748b', padding: '3px 10px', borderRadius: 9999, fontSize: 12, fontWeight: 700 }}>
-                            🥇 #{ev.posisi}
-                          </span>
-                        ) : (
-                          <span style={{ background: '#f0fdf4', color: '#15803d', padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700 }}>
-                            Participant
-                          </span>
-                        )}
-                        <div style={{ fontSize: 12, fontWeight: 700, color: '#16a34a', marginTop: 4 }}>+{ev.points_earned} pts</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Bottom Navigation Bar */}
-          <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'#fff',borderTop:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-around',padding:'8px 0 env(safe-area-inset-bottom,8px)',zIndex:40,boxShadow:'0 -4px 12px rgba(0,0,0,0.06)'}}>
-            <a href="/" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'#94a3b8',fontSize:11,fontWeight:600}}>
-              <span style={{fontSize:22}}>🏠</span>Home
-            </a>
-            <a href="/leaderboard" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'#94a3b8',fontSize:11,fontWeight:600}}>
-              <span style={{fontSize:22}}>🏆</span>Leaderboard
-            </a>
-            <a href="/birds" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'#16a34a',fontSize:11,fontWeight:700}}>
-              <span style={{fontSize:22}}>🐦</span>Profil Burung
-            </a>
-            <a href="/?add=1" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'#94a3b8',fontSize:11,fontWeight:600}}>
-              <span style={{fontSize:22}}>➕</span>Tambah
-            </a>
-          </nav>
-        </>
-      )}
+      {/* Bottom Nav */}
+      <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'var(--bg-primary)',borderTop:'1px solid var(--border-color)',display:'flex',alignItems:'center',justifyContent:'space-around',padding:'8px 0 max(8px, env(safe-area-inset-bottom))',zIndex:40}}>
+        <Link href="/" style={{flex:1,textAlign:'center',textDecoration:'none',color:'var(--text-secondary)',fontSize:11}}><span style={{fontSize:20,display:'block'}}>🏠</span>Home</Link>
+        <Link href="/feed" style={{flex:1,textAlign:'center',textDecoration:'none',color:'var(--text-secondary)',fontSize:11}}><span style={{fontSize:20,display:'block'}}>💬</span>Komunitas</Link>
+        <Link href="/birds" style={{flex:1,textAlign:'center',textDecoration:'none',color:'var(--accent-green)',fontSize:11}}><span style={{fontSize:20,display:'block'}}>🐦</span>Profil</Link>
+        <Link href="/dashboard" style={{flex:1,textAlign:'center',textDecoration:'none',color:'var(--text-secondary)',fontSize:11}}><span style={{fontSize:20,display:'block'}}>👤</span>Akun</Link>
+      </nav>
     </div>
   )
 }
