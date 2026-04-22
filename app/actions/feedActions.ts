@@ -41,8 +41,13 @@ export async function createPost(formData: FormData) {
   const type = formData.get('type') as string || 'harian';
   const imageUrl = formData.get('image_url') as string | null;
   const eventId = formData.get('event_id') as string | null;
+  
+  console.log('Creating post with:', { userId, content, type, imageUrl, eventId }); // Debug log
 
-  if (!userId || !content) return { success: false, message: 'Data tidak lengkap' };
+  if (!userId || !content) {
+    console.error('Missing data:', { userId, content });
+    return { success: false, message: 'Data tidak lengkap. User ID dan Konten wajib diisi.' };
+  }
 
   const payload = {
     user_id: userId,
@@ -60,8 +65,8 @@ export async function createPost(formData: FormData) {
 
   if (!res.ok) {
     const err = await res.json();
-    console.error(err);
-    return { success: false, message: 'Gagal membuat post.' };
+    console.error('Supabase Error:', err);
+    return { success: false, message: `Gagal membuat post: ${err.message || 'Unknown error'}` };
   }
 
   revalidatePath('/feed');
