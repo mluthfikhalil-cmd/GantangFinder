@@ -20,7 +20,10 @@ export default function RootLayout({
             (function() {
               try {
                 var stored = localStorage.getItem('gantang-theme');
-                if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                if (stored === 'light') {
+                  document.documentElement.setAttribute('data-theme', 'light');
+                } else {
+                  // Default to dark for Gen Z aesthetic
                   document.documentElement.setAttribute('data-theme', 'dark');
                 }
               } catch (e) {}

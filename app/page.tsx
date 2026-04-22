@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import './globals.css'
 
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
@@ -45,7 +46,7 @@ export default function Home() {
   const [modal, setModal] = useState(false)
   const [subModal, setSubModal] = useState(false)
   const [toast, setToast] = useState('')
-  const [theme, setTheme] = useState<'light'|'dark'>('light')
+  const [theme, setTheme] = useState<'light'|'dark'>('dark')
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
