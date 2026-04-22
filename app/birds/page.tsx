@@ -254,7 +254,7 @@ export default function PetManagementPage() {
         <Link href="/" style={{flex:1,textAlign:'center',textDecoration:'none',color:'var(--text-secondary)',fontSize:11}}><span style={{fontSize:20,display:'block'}}>🏠</span>Home</Link>
         <Link href="/feed" style={{flex:1,textAlign:'center',textDecoration:'none',color:'var(--text-secondary)',fontSize:11}}><span style={{fontSize:20,display:'block'}}>💬</span>Komunitas</Link>
         <Link href="/birds" style={{flex:1,textAlign:'center',textDecoration:'none',color:'var(--accent-green)',fontSize:11}}><span style={{fontSize:20,display:'block'}}>🐦</span>Profil</Link>
-        <Link href="/dashboard" style={{flex:1,textAlign:'center',textDecoration:'none',color:'var(--text-secondary)',fontSize:11}}><span style={{fontSize:20,display:'block'}}>👤</span>Akun</Link>
+        <Link href="/dashboard" style={{flex:1,textAlign:'center',textDecoration:'none',color:'var(--text-secondary)',fontSize:11}}><span style={{fontSize:20,display:'block'}}>🛡️</span>Manajemen</Link>
       </nav>
     </div>
   )
