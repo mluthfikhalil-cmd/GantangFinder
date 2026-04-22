@@ -17,6 +17,7 @@ export default function FeedPage() {
   const [content, setContent] = useState('');
   const [postType, setPostType] = useState<'harian' | 'lomba' | 'jual' | 'curhat'>('harian');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Load User from Local Storage
   useEffect(() => {
@@ -32,9 +33,19 @@ export default function FeedPage() {
 
   async function loadFeed() {
     setLoading(true);
-    const res = await getFeed(1, 50); // Load lebih banyak untuk feel infinite scroll
-    if (res.success) setPosts(res.data);
-    setLoading(false);
+    setError(null);
+    try {
+      const res = await getFeed(1, 50); // Load lebih banyak untuk feel infinite scroll
+      if (res.success) {
+        setPosts(res.data);
+      } else {
+        setError('Gagal memuat feed.');
+      }
+    } catch (err) {
+      setError('Terjadi kesalahan jaringan.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -46,20 +57,28 @@ export default function FeedPage() {
     if (!content.trim()) return;
 
     setIsSubmitting(true);
+    setError(null);
     const formData = new FormData();
     formData.append('user_id', user.id);
     formData.append('content', content);
     formData.append('type', postType);
 
-    const res = await createPost(formData);
-    
-    if (res.success) {
-      setContent('');
-      loadFeed();
-    } else {
-      alert(res.message);
+    try {
+      const res = await createPost(formData);
+      
+      if (res.success) {
+        setContent('');
+        await loadFeed();
+      } else {
+        setError(res.message || 'Gagal mengirim post.');
+        alert(res.message || 'Gagal mengirim post.');
+      }
+    } catch (err) {
+      setError('Terjadi kesalahan saat mengirim post.');
+      alert('Terjadi kesalahan saat mengirim post.');
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   }
 
   async function handleLike(postId: string) {
@@ -81,18 +100,25 @@ export default function FeedPage() {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex justify-center pb-20">
       
-      {/* MAIN COLUMN (X-Style) */}
-      <div className="w-full max-w-[600px] border-x border-[var(--border-color)] min-h-screen relative">
+      {/* MAIN COLUMN - Responsive Width */}
+      <div className="w-full max-w-[600px] min-h-screen flex flex-col relative border-x border-[var(--border-color)] sm:border-x">
         
-        {/* STICKY HEADER */}
-        <div className="sticky top-0 z-10 bg-[var(--bg-primary)]/80 backdrop-blur-md border-b border-[var(--border-color)] px-4 py-3 flex items-center gap-4">
-          <Link href="/" className="p-2 hover:bg-[var(--bg-secondary)] rounded-full transition-colors text-[var(--text-primary)]">
+        {/* STICKY HEADER - Centered Title */}
+        <div className="sticky top-0 z-10 bg-[var(--bg-primary)]/90 backdrop-blur-md border-b border-[var(--border-color)] px-4 py-3 flex items-center justify-center">
+          <Link href="/" className="absolute left-4 p-2 hover:bg-[var(--bg-secondary)] rounded-full transition-colors text-[var(--text-primary)]">
             ←
           </Link>
-          <h1 className="text-xl font-bold">GantangFeed</h1>
+          <h1 className="text-xl font-bold text-center">GantangFeed</h1>
         </div>
 
-        {/* INPUT BOX AREA */}
+        {/* ERROR MESSAGE */}
+        {error && (
+          <div className="bg-red-100/20 text-red-500 p-3 text-sm border-b border-red-200/20">
+            ⚠️ {error}
+          </div>
+        )}
+
+        {/* INPUT BOX AREA - Mobile Optimized */}
         <div className="border-b border-[var(--border-color)] px-4 py-4">
           {user ? (
             <form onSubmit={handleSubmit}>
@@ -110,11 +136,11 @@ export default function FeedPage() {
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Apa yang sedang terjadi di dunia kicau mania?"
-                    className="w-full bg-transparent text-lg placeholder-gray-500 focus:outline-none resize-none min-h-[80px]"
+                    className="w-full bg-transparent text-base sm:text-lg placeholder-gray-500 focus:outline-none resize-none min-h-[60px] sm:min-h-[80px]"
                   />
                   
-                  {/* Post Type Selector (Simple Chips) */}
-                  <div className="flex gap-2 mb-3 overflow-x-auto pb-2 no-scrollbar">
+                  {/* Post Type Selector - Horizontal Scroll for Mobile */}
+                  <div className="flex gap-2 mb-3 overflow-x-auto pb-2 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
                     {[
                       { id: 'harian', label: '🏠 Harian' },
                       { id: 'lomba', label: '🏆 Lomba' },
@@ -125,10 +151,10 @@ export default function FeedPage() {
                         key={type.id}
                         type="button"
                         onClick={() => setPostType(type.id as any)}
-                        className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-colors
+                        className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors border
                           ${postType === type.id 
-                            ? 'bg-[var(--accent-green)]/10 text-[var(--accent-green)] border border-[var(--accent-green)]' 
-                            : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-transparent hover:border-[var(--border-color)]'}`}
+                            ? 'bg-[var(--accent-green)]/10 text-[var(--accent-green)] border-[var(--accent-green)]' 
+                            : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-transparent hover:border-[var(--border-color)]'}`}
                       >
                         {type.label}
                       </button>
@@ -137,17 +163,17 @@ export default function FeedPage() {
 
                   {/* Divider & Submit */}
                   <div className="flex items-center justify-between pt-3 border-t border-[var(--border-color)]">
-                    <div className="flex gap-2 text-[var(--accent-green)]">
-                      <button type="button" className="p-2 hover:bg-[var(--accent-green)]/10 rounded-full transition-colors">📷</button>
-                      <button type="button" className="p-2 hover:bg-[var(--accent-green)]/10 rounded-full transition-colors">📊</button>
-                      <button type="button" className="p-2 hover:bg-[var(--accent-green)]/10 rounded-full transition-colors">😊</button>
+                    <div className="flex gap-1 sm:gap-2 text-[var(--accent-green)]">
+                      <button type="button" className="p-2 hover:bg-[var(--accent-green)]/10 rounded-full transition-colors text-lg">📷</button>
+                      <button type="button" className="p-2 hover:bg-[var(--accent-green)]/10 rounded-full transition-colors text-lg">📊</button>
+                      <button type="button" className="p-2 hover:bg-[var(--accent-green)]/10 rounded-full transition-colors text-lg">😊</button>
                     </div>
                     <button
                       type="submit"
                       disabled={!content.trim() || isSubmitting}
-                      className="bg-[var(--accent-green)] text-white px-5 py-1.5 rounded-full font-bold text-sm hover:bg-opacity-90 disabled:opacity-50 transition-all shadow-sm"
+                      className="bg-[var(--accent-green)] text-white px-4 sm:px-5 py-1.5 sm:py-2 rounded-full font-bold text-sm hover:bg-opacity-90 disabled:opacity-50 transition-all shadow-sm"
                     >
-                      Unggah
+                      {isSubmitting ? 'Mengirim...' : 'Unggah'}
                     </button>
                   </div>
                 </div>
@@ -161,10 +187,10 @@ export default function FeedPage() {
         </div>
 
         {/* FEED LIST */}
-        <div>
-          {loading && <div className="p-8 text-center text-[var(--text-secondary)]">Memuat...</div>}
+        <div className="flex-grow">
+          {loading && <div className="p-8 text-center text-[var(--text-secondary)]">Memuat feed...</div>}
           
-          {!loading && posts.length === 0 && (
+          {!loading && posts.length === 0 && !error && (
             <div className="p-8 text-center text-[var(--text-secondary)]">
               Belum ada post. Jadilah yang pertama!
             </div>
@@ -175,7 +201,7 @@ export default function FeedPage() {
               <div className="flex gap-3">
                 {/* Avatar User Post */}
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center text-lg shadow-sm">
+                  <div className="w-10 h-10 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-color)] flex items-center justify-center text-lg">
                     🐦
                   </div>
                 </div>
@@ -183,12 +209,12 @@ export default function FeedPage() {
                 {/* Content Post */}
                 <div className="flex-grow min-w-0">
                   {/* Header Post */}
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="font-bold text-[var(--text-primary)] truncate">
                       {post.users?.full_name || 'Anonim'}
                     </span>
                     <span className="text-[var(--text-secondary)] text-sm truncate">
-                      @{post.users?.whatsapp_number?.slice(-4) || 'user'} · {new Date(post.created_at).toLocaleDateString('id-ID')}
+                      @{post.users?.whatsapp_number?.substring(0, 6) || 'user'} · {new Date(post.created_at).toLocaleDateString('id-ID')}
                     </span>
                     <span className={`ml-auto px-2 py-0.5 rounded text-xs font-medium border
                       ${post.post_type === 'lomba' ? 'bg-[#fef3c7] text-[#b45309] border-[#fcd34d]' : 
@@ -199,7 +225,7 @@ export default function FeedPage() {
                   </div>
 
                   {/* Text Content */}
-                  <p className="text-[var(--text-primary)] whitespace-pre-wrap mb-3 leading-normal">
+                  <p className="text-[var(--text-primary)] whitespace-pre-wrap mb-3 leading-normal text-sm sm:text-base">
                     {post.content}
                   </p>
 
