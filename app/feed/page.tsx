@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getFeed, createPost, toggleLike } from '@/app/actions/feedActions';
-import Link from 'next/link';
+import { getFeed, toggleLike } from '@/app/actions/feedActions';
 import GantangPostBox from '@/components/GantangPostBox';
+import Link from 'next/link';
 
 interface User {
   id: string
@@ -15,9 +15,6 @@ export default function FeedPage() {
   const [user, setUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newPost, setNewPost] = useState('');
-  const [postType, setPostType] = useState('harian');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load User from Local Storage
   useEffect(() => {
@@ -27,7 +24,6 @@ export default function FeedPage() {
     }
   }, []);
 
-  // Load Feed Awal
   useEffect(() => {
     loadFeed();
   }, []);
@@ -39,31 +35,6 @@ export default function FeedPage() {
     setLoading(false);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!user) {
-      alert("Silakan login untuk memposting!");
-      return;
-    }
-    if (!newPost.trim()) return;
-
-    setIsSubmitting(true);
-    const formData = new FormData();
-    formData.append('user_id', user.id);
-    formData.append('content', newPost);
-    formData.append('type', postType);
-
-    const res = await createPost(formData);
-    
-    if (res.success) {
-      setNewPost('');
-      loadFeed(); // Refresh feed
-    } else {
-      alert(res.message);
-    }
-    setIsSubmitting(false);
-  }
-
   async function handleLike(postId: string) {
     if (!user) {
       alert("Silakan login untuk menyukai postingan!");
@@ -71,7 +42,6 @@ export default function FeedPage() {
     }
     const res = await toggleLike(postId, user.id);
     if (res.success) {
-      // Update UI lokal secara optimistik
       setPosts(prev => prev.map(p => {
         if (p.id === postId) {
           return { ...p, likes_count: res.liked ? p.likes_count + 1 : p.likes_count - 1 };
@@ -84,27 +54,32 @@ export default function FeedPage() {
   return (
     <div className="max-w-2xl mx-auto p-4 min-h-screen bg-[var(--bg-secondary)] pb-24">
       
-      {/* HEADER */}
+      {/* Header Halaman */}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-[var(--text-primary)]">GantangFeed 🕊️</h1>
         <span className="text-sm text-[var(--text-secondary)]">Komunitas Kicau Mania</span>
       </div>
 
-      {/* INPUT POST */}
+      {/* Komponen Post Box Modern */}
       {user ? (
-        <GantangPostBox user={{ id: user.id, full_name: user.nama_lengkap }} onPostSuccess={loadFeed} />
+        <GantangPostBox 
+          user={{ id: user.id, full_name: user.nama_lengkap }} 
+          onPostSuccess={loadFeed} 
+        />
       ) : (
         <div className="bg-[var(--bg-card)] p-4 rounded-xl shadow-sm mb-6 border border-[var(--border-color)] text-center text-[var(--text-secondary)]">
           Silakan <Link href="/login" className="text-[var(--accent-green)] font-semibold">Login</Link> untuk membagikan postingan
         </div>
       )}
 
-      {/* LIST POSTS */}
+      {/* List Posts */}
       <div className="space-y-6">
         {loading && <div className="text-center py-10 text-[var(--text-secondary)]">Memuat feed...</div>}
         
         {!loading && posts.length === 0 && (
-          <div className="text-center py-10 text-[var(--text-secondary)]">Belum ada post. Jadilah yang pertama!</div>
+          <div className="text-center py-10 text-[var(--text-secondary)] bg-[var(--bg-card)] rounded-xl border border-dashed border-[var(--border-color)]">
+            Belum ada post. Jadilah yang pertama!
+          </div>
         )}
 
         {posts.map((post) => (
@@ -132,27 +107,33 @@ export default function FeedPage() {
             </div>
 
             {/* Content */}
-            <p className="text-[var(--text-primary)] whitespace-pre-wrap mb-3 text-[15px] leading-relaxed">
+            <p className="text-[var(--text-primary)] whitespace-pre-wrap mb-3 text-base leading-relaxed">
               {post.content}
             </p>
 
             {/* Image (Jika ada) */}
             {post.image_url && (
-              <div className="mb-3 rounded-lg overflow-hidden">
+              <div className="mb-3 rounded-lg overflow-hidden border border-[var(--border-color)]">
                  <img src={post.image_url} alt="Post image" className="w-full h-auto object-cover max-h-96" />
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex items-center gap-4 pt-3 border-t border-[var(--border-color)]">
+            {/* Actions Bar */}
+            <div className="flex items-center justify-between pt-3 border-t border-[var(--border-color)] mt-2">
               <button 
                 onClick={() => handleLike(post.id)}
-                className="flex items-center gap-1.5 text-[var(--text-secondary)] hover:text-red-500 transition-colors font-medium text-sm"
+                className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-red-500 transition-colors group"
               >
-                <span>❤️</span> <span>{post.likes_count}</span>
+                <span className="group-hover:scale-110 transition-transform">❤️</span> 
+                <span className="font-medium">{post.likes_count}</span>
               </button>
-              <button className="flex items-center gap-1.5 text-[var(--text-secondary)] hover:text-blue-500 transition-colors font-medium text-sm">
-                <span>💬</span> Komentar
+              
+              <button className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-blue-500 transition-colors">
+                💬 Komentar
+              </button>
+              
+              <button className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-green-500 transition-colors">
+                🔗 Bagikan
               </button>
             </div>
           </div>
