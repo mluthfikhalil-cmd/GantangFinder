@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS public.roosters (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   owner_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
-  breed TEXT, -- Misal: "Bangkok", "Birma", "Saigon"
+  breed TEXT, 
   birth_date DATE,
   gender TEXT DEFAULT 'male',
   weight_kg NUMERIC(4, 2),
@@ -18,10 +18,10 @@ CREATE TABLE IF NOT EXISTS public.medical_records (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   rooster_id UUID REFERENCES public.roosters(id) ON DELETE CASCADE,
   date DATE NOT NULL,
-  type TEXT NOT NULL, -- 'vaksin', 'obat_cacing', 'vitamin', 'cek_dokter'
-  product_name TEXT, -- Nama obat/vitamin
-  dosage TEXT, -- Takaran
-  next_schedule DATE, -- Jadwal pemberian berikutnya
+  type TEXT NOT NULL, 
+  product_name TEXT, 
+  dosage TEXT, 
+  next_schedule DATE, 
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -29,11 +29,11 @@ CREATE TABLE IF NOT EXISTS public.medical_records (
 -- 3. Tabel Permintaan Sparring (Sparring Requests)
 CREATE TABLE IF NOT EXISTS public.sparring_requests (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  requester_rooster_id UUID REFERENCES public.roosters(id) ON DELETE CASCADE, -- Ayam yang mengajak
-  target_rooster_id UUID REFERENCES public.roosters(id) ON DELETE CASCADE, -- Ayam yang diajak
-  status TEXT DEFAULT 'pending', -- 'pending', 'accepted', 'rejected', 'completed'
+  requester_rooster_id UUID REFERENCES public.roosters(id) ON DELETE CASCADE, 
+  target_rooster_id UUID REFERENCES public.roosters(id) ON DELETE CASCADE, 
+  status TEXT DEFAULT 'pending', 
   proposed_date DATE,
-  location_hint TEXT, -- Misal: "Lapangan A"
+  location_hint TEXT, 
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -43,30 +43,34 @@ CREATE TABLE IF NOT EXISTS public.training_logs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   rooster_id UUID REFERENCES public.roosters(id) ON DELETE CASCADE,
   date DATE NOT NULL,
-  activity_type TEXT, -- 'lari', 'renang', 'latih_tanding', 'jemur'
+  activity_type TEXT, 
   duration_minutes INT DEFAULT 0,
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- ========================================
--- RLS POLICIES
+-- RLS POLICIES (PERMISSIVE FOR CUSTOM AUTH)
 -- ========================================
 
+-- Pastikan RLS aktif (atau nonaktifkan jika ingin bebas akses)
 ALTER TABLE public.roosters ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage own roosters" ON public.roosters
-  FOR ALL USING (owner_id = auth.uid());
-CREATE POLICY "Everyone can view active sparring roosters" ON public.roosters
-  FOR SELECT USING (sparring_status = 'active');
-
 ALTER TABLE public.medical_records ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage own medical records" ON public.medical_records 
-  FOR ALL USING (EXISTS (SELECT 1 FROM roosters WHERE roosters.id = medical_records.rooster_id AND roosters.owner_id = auth.uid()));
-
 ALTER TABLE public.sparring_requests ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view and create sparring requests" ON public.sparring_requests 
-  FOR ALL USING (true); 
-
 ALTER TABLE public.training_logs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage own training logs" ON public.training_logs
-  FOR ALL USING (EXISTS (SELECT 1 FROM roosters WHERE roosters.id = training_logs.rooster_id AND roosters.owner_id = auth.uid()));
+
+-- Roosters: Izinkan semua akses (karena kita pakai custom auth session)
+DROP POLICY IF EXISTS "Enable all access for roosters" ON public.roosters;
+CREATE POLICY "Enable all access for roosters" ON public.roosters FOR ALL USING (true) WITH CHECK (true);
+
+-- Medical Records: Izinkan semua akses
+DROP POLICY IF EXISTS "Enable all access for medical_records" ON public.medical_records;
+CREATE POLICY "Enable all access for medical_records" ON public.medical_records FOR ALL USING (true) WITH CHECK (true);
+
+-- Sparring Requests: Izinkan semua akses
+DROP POLICY IF EXISTS "Enable all access for sparring_requests" ON public.sparring_requests;
+CREATE POLICY "Enable all access for sparring_requests" ON public.sparring_requests FOR ALL USING (true) WITH CHECK (true);
+
+-- Training Logs: Izinkan semua akses
+DROP POLICY IF EXISTS "Enable all access for training_logs" ON public.training_logs;
+CREATE POLICY "Enable all access for training_logs" ON public.training_logs FOR ALL USING (true) WITH CHECK (true);
