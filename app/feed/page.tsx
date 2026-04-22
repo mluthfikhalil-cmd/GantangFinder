@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getFeed, createPost, toggleLike } from '@/app/actions/feedActions';
 import Link from 'next/link';
+import GantangPostBox from '@/components/GantangPostBox';
 
 interface User {
   id: string
@@ -90,39 +91,13 @@ export default function FeedPage() {
       </div>
 
       {/* INPUT POST */}
-      <div className="bg-[var(--bg-card)] p-4 rounded-xl shadow-sm mb-8 border border-[var(--border-color)]">
-        <form onSubmit={handleSubmit}>
-          <textarea
-            value={newPost}
-            onChange={(e) => setNewPost(e.target.value)}
-            placeholder={user ? "Bagikan progres latihan, hasil lomba, atau jual burung..." : "Silakan login untuk membagikan postingan..."}
-            disabled={!user}
-            className="w-full p-3 rounded-lg bg-[var(--bg-secondary)] text-[var(--text-primary)] border-none focus:ring-2 focus:ring-[var(--accent-green)] resize-none mb-3 outline-none"
-            rows={3}
-          />
-          {user && (
-            <div className="flex justify-between items-center">
-              <select 
-                value={postType} 
-                onChange={(e) => setPostType(e.target.value)}
-                className="text-sm bg-transparent border border-[var(--border-color)] rounded px-2 py-1 text-[var(--text-primary)] outline-none"
-              >
-                <option value="harian">🏠 Harian/Latber</option>
-                <option value="lomba">🏆 Hasil Lomba</option>
-                <option value="jual">💰 Jual/Beli</option>
-                <option value="curhat">❓ Tanya/Diskusikan</option>
-              </select>
-              <button 
-                type="submit" 
-                disabled={isSubmitting || !newPost.trim()}
-                className="bg-[var(--accent-green)] text-white px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 disabled:opacity-50 transition-all"
-              >
-                {isSubmitting ? 'Posting...' : 'Kirim'}
-              </button>
-            </div>
-          )}
-        </form>
-      </div>
+      {user ? (
+        <GantangPostBox user={{ id: user.id, full_name: user.nama_lengkap }} onPostSuccess={loadFeed} />
+      ) : (
+        <div className="bg-[var(--bg-card)] p-4 rounded-xl shadow-sm mb-6 border border-[var(--border-color)] text-center text-[var(--text-secondary)]">
+          Silakan <Link href="/login" className="text-[var(--accent-green)] font-semibold">Login</Link> untuk membagikan postingan
+        </div>
+      )}
 
       {/* LIST POSTS */}
       <div className="space-y-6">
