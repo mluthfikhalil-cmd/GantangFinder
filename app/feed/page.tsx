@@ -35,13 +35,14 @@ export default function FeedPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await getFeed(1, 50); // Load lebih banyak untuk feel infinite scroll
+      const res = await getFeed(1, 50);
       if (res.success) {
-        setPosts(res.data);
+        setPosts(res.data || []); // Pastikan data adalah array
       } else {
-        setError('Gagal memuat feed.');
+        setError(res.message || 'Gagal memuat feed.');
       }
     } catch (err) {
+      console.error(err);
       setError('Terjadi kesalahan jaringan.');
     } finally {
       setLoading(false);
@@ -211,10 +212,10 @@ export default function FeedPage() {
                   {/* Header Post */}
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="font-bold text-[var(--text-primary)] truncate">
-                      {post.users?.nama_lengkap || 'Anonim'}
+                      {post.users?.nama_lengkap || post.nama_lengkap || 'Pengguna'}
                     </span>
                     <span className="text-[var(--text-secondary)] text-sm truncate">
-                      @{post.users?.nomor_wa?.substring(0, 6) || 'user'} · {new Date(post.created_at).toLocaleDateString('id-ID')}
+                      @{post.users?.nomor_wa?.substring(0, 6) || post.nomor_wa?.substring(0, 6) || 'user'} · {new Date(post.created_at).toLocaleDateString('id-ID')}
                     </span>
                     <span className={`ml-auto px-2 py-0.5 rounded text-xs font-medium border
                       ${post.post_type === 'lomba' ? 'bg-[#fef3c7] text-[#b45309] border-[#fcd34d]' : 
