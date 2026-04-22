@@ -197,8 +197,8 @@ export default function Home() {
         <a href="/" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'var(--accent-green)',fontSize:11,fontWeight:700}}>
           <span style={{fontSize:22}}>🏠</span>Home
         </a>
-        <a href="/leaderboard" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'var(--text-secondary)',fontSize:11,fontWeight:600}}>
-          <span style={{fontSize:22}}>🏆</span>Leaderboard
+        <a href="/komunitas" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'var(--text-secondary)',fontSize:11,fontWeight:600}}>
+          <span style={{fontSize:22}}>💬</span>Komunitas
         </a>
         <a href="/birds" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'var(--text-secondary)',fontSize:11,fontWeight:600}}>
           <span style={{fontSize:22}}>🐦</span>Profil Burung
