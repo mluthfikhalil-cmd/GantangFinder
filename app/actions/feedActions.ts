@@ -24,7 +24,7 @@ export async function getFeed(page = 1, limit = 10) {
   const to = from + limit - 1;
 
   const res = await supabaseFetch(
-    `posts?select=*,users(full_name,whatsapp_number)&order=created_at.desc&range=${from}.${to}`,
+    `posts?select=*,users(nama_lengkap,nomor_wa)&order=created_at.desc&range=${from}.${to}`,
     { method: 'GET' }
   );
 
