@@ -363,18 +363,7 @@ export default function Home() {
       {/* Content */}
       <main style={{maxWidth:640,margin:'0 auto',padding:16}}>
         {err && <div style={{padding:12,background:'#fef2f2',border:'1px solid #fecaca',borderRadius:10,color:'#b91c1c',fontSize:13,marginBottom:16}}>⚠️ {err}</div>}
-          {/* Debug: show loading state in UI */}
-          <div style={{padding:8,background:loading?'#fef3c7':'#d1fae5',borderRadius:8,marginBottom:16,fontSize:12,color:loading?'#92400e':'#065f46', wordBreak:'break-all'}}>
-            loading: {String(loading)} | events: {evs.length} | err: {err||'(none)'}
-            {!loading && evs.length === 0 && <button onClick={async () => {
-              try {
-                const r = await fetch('/api/public-events')
-                const d = await r.json()
-                setEvs(d)
-              } catch(e) { setErr(String(e)); }
-              setLoading(false)
-            }} style={{marginLeft:8,padding:'4px 8px',fontSize:11}}>Retry</button>}
-          </div>
+          
         {/* Subscriber Banner */}
         <div style={{background:'var(--banner-bg)',borderRadius:16,padding:'16px 18px',border:'1.5px solid var(--border-color)',marginBottom:20,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
           <div style={{flex:1}}>
