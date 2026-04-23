@@ -50,6 +50,16 @@ export default function Home() {
   const [toast, setToast] = useState('')
   const [theme, setTheme] = useState<'light'|'dark'>('dark')
   const [scrolled, setScrolled] = useState(false)
+  const [currentUser, setCurrentUser] = useState<{id: string; username: string; nama_lengkap?: string; wa_number?: string} | null>(null)
+
+  // Handle add event button - check login first
+  const handleAddClick = () => {
+    if (!currentUser) {
+      window.location.href = '/login?redirect=/'
+      return
+    }
+    setModal(true)
+  }
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10)
@@ -77,7 +87,16 @@ export default function Home() {
       }
       setLoading(false)
     }
-    void fetchEvents()
+
+    // Check login status on mount
+    const savedUser = localStorage.getItem('gantang_user')
+    if (savedUser) {
+      try {
+        setCurrentUser(JSON.parse(savedUser))
+      } catch (e) {
+        localStorage.removeItem('gantang_user')
+      }
+    }
   }, [])
 
   const list = evs.filter(e => {
@@ -180,7 +199,7 @@ export default function Home() {
           <a href="/leaderboard" style={{display:'flex',alignItems:'center',gap:6,padding:'8px 14px',background:'var(--bg-primary)',color:'var(--text-secondary)',border:'1px solid var(--border-color)',borderRadius:10,fontSize:12,fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>🏆 Leaderboard</a>
           <a href="/birds" style={{display:'flex',alignItems:'center',gap:6,padding:'8px 14px',background:'var(--bg-primary)',color:'var(--text-secondary)',border:'1px solid var(--border-color)',borderRadius:10,fontSize:12,fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>🐦 Profil Burung</a>
           <a href="/masteran" style={{display:'flex',alignItems:'center',gap:6,padding:'8px 14px',background:'var(--bg-primary)',color:'var(--text-secondary)',border:'1px solid var(--border-color)',borderRadius:10,fontSize:12,fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>🎵 Masteran</a>
-          <button onClick={()=>setModal(true)} style={{display:'flex',alignItems:'center',gap:6,padding:'8px 14px',background:'var(--accent-violet)',color:'#fff',border:'none',borderRadius:10,fontSize:12,fontWeight:700,textDecoration:'none',whiteSpace:'nowrap',cursor:'pointer'}}>➕ Buat Event</button>
+          <button onClick={handleAddClick} style={{display:'flex',alignItems:'center',gap:6,padding:'8px 14px',background:'var(--accent-violet)',color:'#fff',border:'none',borderRadius:10,fontSize:12,fontWeight:700,textDecoration:'none',whiteSpace:'nowrap',cursor:'pointer'}}>➕ Buat Event</button>
         </div>
       </div>
 
@@ -296,13 +315,13 @@ function AddModal({tab,onClose,onSaved}:{tab:string,onClose:()=>void,onSaved:(e:
     const f=e.currentTarget
     const g=(n:string)=>(f.elements.namedItem(n) as HTMLInputElement)?.value?.trim()||''
     const body:Record<string,unknown>={
-      nama_event:g('nama'),penyelenggara:g('penyelenggara'),lokasi:g('lokasi'),kota:g('kota'),
+      nama_event:g('nama'),penyelenggara:currentUser?.nama_laktif||g('penyelenggara'),lokasi:g('lokasi'),kota:g('kota'),
       tanggal:g('tanggal')||null,jenis_burung:birds,is_featured:featured,jenis_lomba:tab,
-      kontak:g('kontak')||null,
+      kontak:g('kontak')||null, organizer_id: currentUser?.id||null,
     }
     if(tab==='kicau'){body.level_event=g('level')||null;body.aturan_sangkar=g('sangkar')||null}
     if(tab==='merpati'){body.kategori_merpati=g('kat_mer')||null;body.jarak_meter=g('jarak')?parseInt(g('jarak')):null;body.kategori_kelas=g('kelas')||null}
-    if(!body.nama_event||!body.penyelenggara||!body.kota){setErr('Nama, penyelenggara, dan kota wajib.');setLoading(false);return}
+    if(!body.nama_event||!body.kota){setErr('Nama event dan kota wajib.');setLoading(false);return}
     try {
       const res=await fetch(`${SB_URL}/rest/v1/events`,{method:'POST',headers:{...H,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(body)})
       const data=await res.json()
