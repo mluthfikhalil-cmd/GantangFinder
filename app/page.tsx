@@ -395,6 +395,12 @@ export default function Home() {
           {/* Debug: show loading state */}
           <div style={{padding:8,background:loading?'#fef3c7':'#d1fae5',borderRadius:8,marginBottom:16,fontSize:12,color:loading?'#92400e':'#065f46'}}>
             loading: {String(loading)} | events: {evs.length} | error: {err||'none'}
+            <button onClick={async () => {
+              const r = await fetch('/api/public-events')
+              const d = await r.json()
+              setEvs(Array.isArray(d) ? d : [])
+              setLoading(false)
+            }} style={{marginLeft:8,padding:'4px 8px',fontSize:11}}>Load Now</button>
           </div>
         {/* Subscriber Banner */}
         <div style={{background:'var(--banner-bg)',borderRadius:16,padding:'16px 18px',border:'1.5px solid var(--border-color)',marginBottom:20,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
