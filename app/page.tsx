@@ -227,6 +227,9 @@ export default function Home() {
         <a href="/birds" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'var(--text-secondary)',fontSize:11,fontWeight:600}}>
           <span style={{fontSize:22}}>🐦</span>Profil Burung
         </a>
+        <a href="/masteran" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',textDecoration:'none',color:'var(--text-secondary)',fontSize:11,fontWeight:600}}>
+          <span style={{fontSize:22}}>🎵</span>Masteran
+        </a>
         <button onClick={()=>setModal(true)} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'6px 8px',border:'none',background:'transparent',cursor:'pointer',color:'var(--text-secondary)',fontSize:11,fontWeight:600,fontFamily:'inherit'}}>
           <span style={{fontSize:22}}>➕</span>Tambah
         </button>
