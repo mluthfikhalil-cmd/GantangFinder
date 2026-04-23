@@ -81,10 +81,11 @@ export default function Home() {
       if (!SB_URL || !SB_KEY) { setErr('Env vars tidak ditemukan'); setLoading(false); return }
       try {
         const r = await fetch(`${SB_URL}/rest/v1/events?select=*&order=is_featured.desc,tanggal.asc`, { headers: H })
+        if (!r.ok) { setErr('Gagal mengambil event: ' + r.status); setLoading(false); return }
         const d = await r.json()
         setEvs(Array.isArray(d) ? d : [])
       } catch(e: unknown) {
-        setErr(String(e))
+        setErr('Error: ' + String(e))
       }
       setLoading(false)
     }
