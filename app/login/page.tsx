@@ -161,8 +161,7 @@ function LoginForm() {
         </div>
 
         {/* Footer links */}
-        <div style={{ textAlign: 'center', marginTop: 20, display: 'flex', justifyContent: 'center', gap: 16, fontSize: 13 }}>
-          <Link href="/" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 600 }}>← Beranda</Link>
+        <div style={{ textAlign: 'center', marginTop: 20, fontSize: 13 }}>
           <button 
             onClick={() => { setIsRegister(!isRegister); setMsg(null); }}
             style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontWeight: 600, cursor: 'pointer' }}
