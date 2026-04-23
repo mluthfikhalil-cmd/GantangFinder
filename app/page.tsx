@@ -148,7 +148,7 @@ export default function Home() {
       {/* Hero */}
       <header style={{background: 'var(--header-bg)', padding:'28px 20px 20px', transition: 'box-shadow 0.3s', borderBottom: '1px solid var(--border-color)', boxShadow: scrolled ? '0 4px 6px -1px rgba(0,0,0,0.05)' : 'none', position: 'sticky', top: 0, zIndex: 40}}>
         <div style={{maxWidth:640,margin:'0 auto'}}>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
             <div style={{display:'flex',alignItems:'center',gap:12}}>
               <div style={{width:44,height:44,borderRadius:12,background:'var(--accent-green)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22}}>{tab==='kicau'?'🐦':tab==='merpati'?'🕊️':'🐓'}</div>
               <div>
@@ -156,9 +156,29 @@ export default function Home() {
                 <p style={{color:'var(--text-secondary)',fontSize:13,margin:0}}>{tab==='kicau'?'Lomba Burung Kicau':tab==='merpati'?'Lomba Merpati / Dara':'Manajemen Ayam Jago'} se-Indonesia</p>
               </div>
             </div>
-            <button onClick={toggleTheme} style={{width: 36, height: 36, borderRadius: '50%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18}}>
-              {theme === 'light' ? '🌙' : '☀️'}
-            </button>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <button 
+                onClick={handleAddClick} 
+                style={{
+                  padding: '8px 16px',
+                  background: 'var(--accent-violet)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 10,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                ➕ Buat Event
+              </button>
+              <button onClick={toggleTheme} style={{width: 36, height: 36, borderRadius: '50%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18}}>
+                {theme === 'light' ? '🌙' : '☀️'}
+              </button>
+            </div>
           </div>
           <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:12}}>
             {[{v:list.length,l:'Total Event',c:'var(--text-primary)'},{v:list.filter(e=>e.is_featured).length,l:'Featured',c:'var(--accent-amber)'},{v:list.filter(e=>{const d=days(e.tanggal);return d!==null&&d>=0&&d<=30}).length,l:'Bulan Ini',c:'var(--accent-green)'}].map(s=>(
@@ -343,7 +363,6 @@ export default function Home() {
           <a href="/leaderboard" style={{display:'flex',alignItems:'center',gap:6,padding:'8px 14px',background:'var(--bg-primary)',color:'var(--text-secondary)',border:'1px solid var(--border-color)',borderRadius:10,fontSize:12,fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>🏆 Leaderboard</a>
           <a href="/birds" style={{display:'flex',alignItems:'center',gap:6,padding:'8px 14px',background:'var(--bg-primary)',color:'var(--text-secondary)',border:'1px solid var(--border-color)',borderRadius:10,fontSize:12,fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>🐦 Profil Burung</a>
           <a href="/masteran" style={{display:'flex',alignItems:'center',gap:6,padding:'8px 14px',background:'var(--bg-primary)',color:'var(--text-secondary)',border:'1px solid var(--border-color)',borderRadius:10,fontSize:12,fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>🎵 Masteran</a>
-          <button onClick={handleAddClick} style={{display:'flex',alignItems:'center',gap:6,padding:'8px 14px',background:'var(--accent-violet)',color:'#fff',border:'none',borderRadius:10,fontSize:12,fontWeight:700,textDecoration:'none',whiteSpace:'nowrap',cursor:'pointer'}}>➕ Buat Event</button>
         </div>
       </div>
 
