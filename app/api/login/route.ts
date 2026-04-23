@@ -19,9 +19,9 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = simpleHash(password)
 
-    // Find user by username and password
+    // Find user by email or username
     const res = await fetch(
-      `${SB_URL}/rest/v1/users?username=eq.${encodeURIComponent(username)}&password_hash=eq.${encodeURIComponent(passwordHash)}&select=*`,
+      `${SB_URL}/rest/v1/users?or=(email.eq.${encodeURIComponent(username)},username.eq.${encodeURIComponent(username)})&select=*`,
       { headers: H }
     )
     const data = await res.json()
@@ -31,6 +31,11 @@ export async function POST(req: NextRequest) {
     }
 
     const user = data[0]
+
+    // Verify password - compare hash
+    if (user.password_hash !== passwordHash) {
+      return NextResponse.json({ success: false, error: 'Username atau password salah' }, { status: 401 })
+    }
 
     // Return user data
     return NextResponse.json({
