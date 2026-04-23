@@ -77,51 +77,22 @@ export default function Home() {
   }
 
   useEffect(() => {
-    // Debug: show component mounted
-    console.log('[Home] Component mounted, fetching events...')
-    
-    async function fetchEvents() {
-      console.log('[Home] Starting fetch...')
-      
-      const STORAGE_KEY = 'gantang_events_cache'
-      // Try cached events first
-      const cached = localStorage.getItem(STORAGE_KEY)
-      if (cached) {
-        try { 
-          const parsed = JSON.parse(cached)
-          console.log('[Home] Loaded cached events:', parsed.length)
-          setEvs(parsed) 
-        } catch {}
-      }
-      // Fetch fresh from our API
+    const fetchEvents = async () => {
       try {
-        console.log('[Home] Fetching from /api/public-events...')
-        const r = await fetch('/api/public-events')
-        console.log('[Home] Response status:', r.status)
-        if (!r.ok) { setErr('Gagal mengambil event: ' + r.status); setLoading(false); return }
-        const d = await r.json()
-        console.log('[Home] Fetched events:', d.length, Array.isArray(d))
-        if (d.error) { setErr(d.error); setLoading(false); return }
-        const events = Array.isArray(d) ? d : []
-        setEvs(events)
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(events)) } catch {}
-      } catch(e: unknown) {
-        console.log('[Home] Fetch error:', e)
-        setErr('Error: ' + String(e))
+        const response = await fetch('/api/public-events');
+        if(!response.ok){
+           throw new Error('Fetch failed with status: ' + response.status);
+        }
+        const data = await response.json();
+        if (Array.isArray(data)) setEvs(data);
+      } catch(e) {
+        setErr(e.message);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false)
-    }
-
-    // Check login status on mount
-    const savedUser = localStorage.getItem('gantang_user')
-    if (savedUser) {
-      try {
-        setCurrentUser(JSON.parse(savedUser))
-      } catch (e) {
-        localStorage.removeItem('gantang_user')
-      }
-    }
-  }, [])
+    };
+    fetchEvents();
+  }, []);
 
   const list = evs.filter(e => {
     const jl = e.jenis_lomba ?? 'kicau'
