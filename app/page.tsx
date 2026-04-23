@@ -92,6 +92,16 @@ export default function Home() {
       }
     };
     fetchEvents();
+    
+    // Check login status from localStorage
+    const savedUser = localStorage.getItem('gantang_user');
+    if (savedUser) {
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+      } catch (e) {
+        localStorage.removeItem('gantang_user');
+      }
+    }
   }, []);
 
   const list = evs.filter(e => {
