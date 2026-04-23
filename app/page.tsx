@@ -78,12 +78,26 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchEvents() {
-      if (!SB_URL || !SB_KEY) { setErr('Env vars tidak ditemukan'); setLoading(false); return }
+      const STORAGE_KEY = 'gantang_events_cache'
+      // Try cached events first
+      const cached = localStorage.getItem(STORAGE_KEY)
+      if (cached) {
+        try { setEvs(JSON.parse(cached)) } catch {}
+      }
+      // Fetch fresh
+      if (!SB_URL || !SB_KEY) { 
+        setErr('Konfigurasi Supabase belum lengkap. Cek env variables!')
+        if (!cached) setEvs([])
+        setLoading(false)
+        return 
+      }
       try {
         const r = await fetch(`${SB_URL}/rest/v1/events?select=*&order=is_featured.desc,tanggal.asc`, { headers: H })
         if (!r.ok) { setErr('Gagal mengambil event: ' + r.status); setLoading(false); return }
         const d = await r.json()
-        setEvs(Array.isArray(d) ? d : [])
+        const events = Array.isArray(d) ? d : []
+        setEvs(events)
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(events)) } catch {}
       } catch(e: unknown) {
         setErr('Error: ' + String(e))
       }
