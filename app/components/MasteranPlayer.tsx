@@ -121,11 +121,19 @@ export default function MasteranPlayer({ sound, onPlay, onDownload }: MasteranPl
       <audio
         ref={audioRef}
         src={sound.audio_url}
+        preload="auto"
+        controls
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={() => {
           if (audioRef.current) setDuration(audioRef.current.duration)
         }}
         onEnded={() => setIsPlaying(false)}
+        onError={(e) => {
+          console.error('Audio load error:', e)
+          const audio = e.target as HTMLAudioElement
+          console.log('Audio error - URL:', audio.src, 'Error:', audio.error?.message)
+        }}
+        style={{ width: '100%', height: '40px', marginBottom: '8px' }}
       />
 
       {/* Top row: emoji + info + stats */}
