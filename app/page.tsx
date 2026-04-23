@@ -45,6 +45,7 @@ export default function Home() {
   const [kelas, setKelas] = useState('')
   const [dateStart, setDateStart] = useState('')
   const [dateEnd, setDateEnd] = useState('')
+  const [showDatePicker, setShowDatePicker] = useState(false)
   const [modal, setModal] = useState(false)
   const [subModal, setSubModal] = useState(false)
   const [toast, setToast] = useState('')
@@ -123,8 +124,23 @@ export default function Home() {
   const featured = list.filter(e => isActiveFeatured(e))
   const regular = list.filter(e => !isActiveFeatured(e))
 
-  const btn = (active:boolean, label:string, onClick:()=>void, color='var(--accent-green)') => (
-    <button onClick={onClick} style={{padding:'5px 14px',borderRadius:9999,fontSize:12,fontWeight:700,fontFamily:'inherit',cursor:'pointer',flexShrink:0,border:`1.5px solid ${active?color:'var(--border-color)'}`,background:active?color:'var(--bg-card)',color:active?'#fff':'var(--text-secondary)'}}>{label}</button>
+  const btn = (active:boolean, label:string, onClick:()=>void, color='#10b981') => (
+    <button onClick={onClick} style={{
+      padding: active ? '8px 16px' : '6px 14px',
+      borderRadius: 20,
+      fontSize: 13,
+      fontWeight: 600,
+      fontFamily: 'inherit',
+      cursor: 'pointer',
+      flexShrink: 0,
+      border: 'none',
+      background: active 
+        ? `linear-gradient(135deg, ${color}, ${color}cc)` 
+        : 'rgba(255,255,255,0.08)',
+      color: active ? '#fff' : 'var(--text-secondary)',
+      boxShadow: active ? `0 2px 8px ${color}40` : 'none',
+      transition: 'all 0.2s ease',
+    }}>{label}</button>
   )
 
   return (
@@ -170,11 +186,139 @@ export default function Home() {
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Cari nama event..." style={{flex:1,padding:'9px 12px',background:'var(--bg-secondary)', color:'var(--text-primary)', border:'1px solid var(--border-color)',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
             <input value={kota} onChange={e=>setKota(e.target.value)} placeholder="📍 Kota..." style={{flex:1,padding:'9px 12px',background:'var(--bg-secondary)', color:'var(--text-primary)', border:'1px solid var(--border-color)',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
           </div>
-          <div style={{display:'flex',gap:8}}>
-            <input type="date" value={dateStart} onChange={e=>setDateStart(e.target.value)} style={{flex:1,padding:'9px 12px',background:'var(--bg-secondary)', color:'var(--text-primary)', border:'1px solid var(--border-color)',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
-            <span style={{color:'var(--text-secondary)',alignSelf:'center'}}>→</span>
-            <input type="date" value={dateEnd} onChange={e=>setDateEnd(e.target.value)} style={{flex:1,padding:'9px 12px',background:'var(--bg-secondary)', color:'var(--text-primary)', border:'1px solid var(--border-color)',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
+          <div style={{display:'flex',gap:8, alignItems:'center'}}>
+            <button 
+              onClick={() => setShowDatePicker(!showDatePicker)} 
+              style={{
+                flex: 1,
+                padding: '10px 14px',
+                background: 'var(--bg-secondary)', 
+                color: dateStart || dateEnd ? 'var(--text-primary)' : 'var(--text-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 12,
+                fontSize: 13,
+                fontFamily: 'inherit',
+                outline: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              📅 {dateStart && dateEnd ? `${dateStart} → ${dateEnd}` : dateStart ? `Dari ${dateEnd ? dateEnd : '...'}` : dateEnd ? `Sampai ${dateEnd}` : 'Pilih tanggal...'}
+            </button>
+            {(dateStart || dateEnd) && (
+              <button 
+                onClick={() => { setDateStart(''); setDateEnd('') }} 
+                style={{
+                  padding: '8px 12px',
+                  background: 'transparent',
+                  color: 'var(--text-muted)',
+                  border: 'none',
+                  fontSize: 18,
+                  cursor: 'pointer',
+                }}
+              >
+                ✕
+              </button>
+            )}
           </div>
+          {showDatePicker && (
+            <div style={{
+              position: 'absolute',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 16,
+              padding: 16,
+              boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+              zIndex: 100,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+              width: 280,
+            }}>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                <button onClick={() => setShowDatePicker(false)} style={{background:'transparent', border:'none', color:'var(--text-secondary)', cursor:'pointer', fontSize:16}}>✕</button>
+                <span style={{fontWeight:600, color:'var(--text-primary)'}}>Pilih Tanggal</span>
+                <div style={{width:16}}></div>
+              </div>
+              <div style={{display:'flex', gap: 8}}>
+                <div style={{flex:1}}>
+                  <label style={{fontSize:11, color:'var(--text-secondary)', marginBottom:4, display:'block'}}>Dari</label>
+                  <input 
+                    type="date" 
+                    value={dateStart} 
+                    onChange={e => setDateStart(e.target.value)} 
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 10,
+                      fontSize: 13,
+                      fontFamily: 'inherit',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+                <div style={{flex:1}}>
+                  <label style={{fontSize:11, color:'var(--text-secondary)', marginBottom:4, display:'block'}}>Sampai</label>
+                  <input 
+                    type="date" 
+                    value={dateEnd} 
+                    onChange={e => setDateEnd(e.target.value)} 
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 10,
+                      fontSize: 13,
+                      fontFamily: 'inherit',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+              </div>
+              <div style={{display:'flex', gap: 6, justifyContent:'center'}}>
+                <button 
+                  onClick={() => {
+                    const today = new Date()
+                    const nextWeek = new Date(today.getTime() + 7*24*60*60*1000)
+                    setDateStart(today.toISOString().split('T')[0])
+                    setDateEnd(nextWeek.toISOString().split('T')[0])
+                  }}
+                  style={{padding:'6px 12px', borderRadius:8, fontSize:12, background:'var(--bg-secondary)', color:'var(--text-secondary)', border:'1px solid var(--border-color)', cursor:'pointer'}}
+                >
+                  Minggu ini
+                </button>
+                <button 
+                  onClick={() => {
+                    const today = new Date()
+                    const nextMonth = new Date(today.getFullYear(), today.getMonth()+1, 0)
+                    setDateStart(today.toISOString().split('T')[0])
+                    setDateEnd(nextMonth.toISOString().split('T')[0])
+                  }}
+                  style={{padding:'6px 12px', borderRadius:8, fontSize:12, background:'var(--bg-secondary)', color:'var(--text-secondary)', border:'1px solid var(--border-color)', cursor:'pointer'}}
+                >
+                  Bulan ini
+                </button>
+                <button 
+                  onClick={() => {
+                    const today = new Date()
+                    const nextMonth = new Date(today.getFullYear(), today.getMonth()+2, 0)
+                    setDateStart(today.toISOString().split('T')[0])
+                    setDateEnd(nextMonth.toISOString().split('T')[0])
+                  }}
+                  style={{padding:'6px 12px', borderRadius:8, fontSize:12, background:'var(--bg-secondary)', color:'var(--text-secondary)', border:'1px solid var(--border-color)', cursor:'pointer'}}
+                >
+                  2 Bulan
+                </button>
+              </div>
+            </div>
+          )}
           <div className="tab-content" style={{display:'flex',gap:6,overflowX:'auto', paddingBottom: 4}}>
             {tab==='kicau' ? ['','Latber','Latpres','Regional','Nasional'].map(l=>btn(level===l,l||'Semua',()=>setLevel(l))) : tab==='merpati' ? (
               <>
