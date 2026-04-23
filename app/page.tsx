@@ -315,7 +315,7 @@ function AddModal({tab,onClose,onSaved}:{tab:string,onClose:()=>void,onSaved:(e:
     const f=e.currentTarget
     const g=(n:string)=>(f.elements.namedItem(n) as HTMLInputElement)?.value?.trim()||''
     const body:Record<string,unknown>={
-      nama_event:g('nama'),penyelenggara:currentUser?.nama_laktif||g('penyelenggara'),lokasi:g('lokasi'),kota:g('kota'),
+      nama_event:g('nama'),penyelenggara:currentUser?.nama_lengkap||g('penyelenggara'),lokasi:g('lokasi'),kota:g('kota'),
       tanggal:g('tanggal')||null,jenis_burung:birds,is_featured:featured,jenis_lomba:tab,
       kontak:g('kontak')||null, organizer_id: currentUser?.id||null,
     }
