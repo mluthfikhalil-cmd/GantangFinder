@@ -26,9 +26,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Password minimal 4 karakter' }, { status: 400 })
     }
 
-    // Check if username exists
+    // Check if username or email exists
     const checkRes = await fetch(
-      `${SB_URL}/rest/v1/users?username=eq.${encodeURIComponent(username)}&select=id`,
+      `${SB_URL}/rest/v1/users?or=(username.eq.${encodeURIComponent(username)},email.eq.${encodeURIComponent(username+'@demo.com')})&select=id`,
       { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
     )
     const checkData = await checkRes.json()
@@ -44,9 +44,10 @@ export async function POST(req: NextRequest) {
       headers: H,
       body: JSON.stringify({
         username,
+        email: username + '@demo.com', -- Use username as email for compatibility
         password_hash: passwordHash,
-        nama_lengkap: namaLengkap,
-        wa_number: waNumber || null,
+        full_name: namaLengkap,
+        whatsapp_number: waNumber || null,
       }),
     })
 
@@ -62,9 +63,9 @@ export async function POST(req: NextRequest) {
       success: true,
       user: {
         id: user.id,
-        username: user.username,
-        nama_lengkap: user.nama_lengkap,
-        wa_number: user.wa_number || '',
+        username: user.username || user.email,
+        nama_lengkap: user.full_name,
+        wa_number: user.whatsapp_number || '',
       },
     })
   } catch (e) {

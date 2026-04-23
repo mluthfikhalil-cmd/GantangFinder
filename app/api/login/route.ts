@@ -37,9 +37,9 @@ export async function POST(req: NextRequest) {
       success: true,
       user: {
         id: user.id,
-        username: user.username,
-        nama_lengkap: user.nama_lengkap,
-        wa_number: user.wa_number || '',
+        username: user.username || user.email,
+        nama_lengkap: user.full_name,
+        wa_number: user.whatsapp_number || '',
       },
     })
   } catch (e) {
