@@ -78,22 +78,32 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchEvents() {
+      console.log('[Home] Starting fetch...')
+      
       const STORAGE_KEY = 'gantang_events_cache'
       // Try cached events first
       const cached = localStorage.getItem(STORAGE_KEY)
       if (cached) {
-        try { setEvs(JSON.parse(cached)) } catch {}
+        try { 
+          const parsed = JSON.parse(cached)
+          console.log('[Home] Loaded cached events:', parsed.length)
+          setEvs(parsed) 
+        } catch {}
       }
       // Fetch fresh from our API
       try {
+        console.log('[Home] Fetching from /api/public-events...')
         const r = await fetch('/api/public-events')
+        console.log('[Home] Response status:', r.status)
         if (!r.ok) { setErr('Gagal mengambil event: ' + r.status); setLoading(false); return }
         const d = await r.json()
+        console.log('[Home] Fetched events:', d.length, Array.isArray(d))
         if (d.error) { setErr(d.error); setLoading(false); return }
         const events = Array.isArray(d) ? d : []
         setEvs(events)
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(events)) } catch {}
       } catch(e: unknown) {
+        console.log('[Home] Fetch error:', e)
         setErr('Error: ' + String(e))
       }
       setLoading(false)
