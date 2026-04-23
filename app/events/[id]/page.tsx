@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { generatePoster } from '@/app/actions/generatePoster'
+import EventRatings from '../../components/EventRatings'
 
 interface Bird {
   id: string; nama_burung: string; jenis_burung: string; owner_id: string
@@ -331,6 +332,9 @@ export default function DetailPage() {
           style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:'#f0fdf4',color:'#15803d',borderRadius:12,padding:'12px 0',fontSize:13,fontWeight:600,textDecoration:'none',border:'1.5px solid #bbf7d0',marginBottom:16}}>
           📤 Bagikan Event Ini
         </a>
+
+        {/* Rating & Ulasan */}
+        <EventRatings eventId={id} userId={user?.id} />
       </div>
 
       {/* Sticky Buttons */}
