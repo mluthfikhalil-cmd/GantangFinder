@@ -392,15 +392,9 @@ export default function Home() {
       {/* Content */}
       <main style={{maxWidth:640,margin:'0 auto',padding:16}}>
         {err && <div style={{padding:12,background:'#fef2f2',border:'1px solid #fecaca',borderRadius:10,color:'#b91c1c',fontSize:13,marginBottom:16}}>⚠️ {err}</div>}
-          {/* Debug: show loading state */}
+          {/* Debug: show loading state in UI */}
           <div style={{padding:8,background:loading?'#fef3c7':'#d1fae5',borderRadius:8,marginBottom:16,fontSize:12,color:loading?'#92400e':'#065f46'}}>
             loading: {String(loading)} | events: {evs.length} | error: {err||'none'}
-            <button onClick={async () => {
-              const r = await fetch('/api/public-events')
-              const d = await r.json()
-              setEvs(Array.isArray(d) ? d : [])
-              setLoading(false)
-            }} style={{marginLeft:8,padding:'4px 8px',fontSize:11}}>Load Now</button>
           </div>
         {/* Subscriber Banner */}
         <div style={{background:'var(--banner-bg)',borderRadius:16,padding:'16px 18px',border:'1.5px solid var(--border-color)',marginBottom:20,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
