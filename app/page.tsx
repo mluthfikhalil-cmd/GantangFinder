@@ -160,7 +160,7 @@ export default function Home() {
               {theme === 'light' ? '🌙' : '☀️'}
             </button>
           </div>
-          <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:16}}>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:12}}>
             {[{v:list.length,l:'Total Event',c:'var(--text-primary)'},{v:list.filter(e=>e.is_featured).length,l:'Featured',c:'var(--accent-amber)'},{v:list.filter(e=>{const d=days(e.tanggal);return d!==null&&d>=0&&d<=30}).length,l:'Bulan Ini',c:'var(--accent-green)'}].map(s=>(
               <div key={s.l} style={{background:'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius:10,padding:'8px 14px', flex: '1 1 auto', minWidth: 90}}>
                 <div style={{color:s.c,fontSize:20,fontWeight:800}}>{loading?'—':s.v}</div>
@@ -180,7 +180,7 @@ export default function Home() {
       </header>
 
       {/* Filter Bar */}
-      <div style={{background:'rgba(var(--header-bg), 0.85)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom:'1px solid var(--border-color)',padding:'12px 16px'}}>
+      <div style={{background:'rgba(var(--header-bg), 0.85)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom:'1px solid var(--border-color)',padding:'10px 16px'}}>
         <div style={{maxWidth:640,margin:'0 auto',display:'flex',flexDirection:'column',gap:8}}>
           <div style={{display:'flex',gap:8}}>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Cari nama event..." style={{flex:1,padding:'9px 12px',background:'var(--bg-secondary)', color:'var(--text-primary)', border:'1px solid var(--border-color)',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
