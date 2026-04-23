@@ -8,6 +8,13 @@ export const BIRDS = [
   'Trucukan','Prenjak','Tledekan','Jalak Suren','Jalak Bali',
 ] as const
 
+// Rooster-specific constants
+export const ROOSTER_CLASSES = ['1.5 kg', '2.0 kg', '2.5 kg', '3.0 kg', 'Open'] as const
+export const ROOSTER_BREEDS = [
+  'Bangkok','Brunei','Vietnam','Myanmar','Lokal',
+  'Filipina','Malaysia','Indonesia','Mdg/India','Super'
+] as const
+
 export type Level = typeof LEVELS[number]
 
 export interface Event {

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { addEvent } from '../actions'
-import { LEVELS, BIRDS } from './types'
+import { LEVELS, BIRDS, ROOSTER_CLASSES, ROOSTER_BREEDS } from './types'
 
 interface User {
   id: string
@@ -43,6 +43,8 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [selectedBurung, setSelectedBurung] = useState<string[]>([])
+  const [selectedRoosterClasses, setSelectedRoosterClasses] = useState<string[]>([])
+  const [selectedRoosterBreeds, setSelectedRoosterBreeds] = useState<string[]>([])
   const [selectedLevel, setSelectedLevel] = useState('')
   const [isFeatured, setIsFeatured] = useState(false)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
@@ -73,6 +75,14 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
     setSelectedBurung(prev => prev.includes(val) ? prev.filter(b => b !== val) : [...prev, val])
   }
 
+  function toggleRoosterClass(val: string) {
+    setSelectedRoosterClasses(prev => prev.includes(val) ? prev.filter(b => b !== val) : [...prev, val])
+  }
+
+  function toggleRoosterBreed(val: string) {
+    setSelectedRoosterBreeds(prev => prev.includes(val) ? prev.filter(b => b !== val) : [...prev, val])
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
@@ -97,6 +107,8 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
       fd.append('kota', get('kota'))
       fd.append('tanggal', get('tanggal'))
       fd.append('jenis_burung', selectedBurung.join(','))
+      fd.append('kelas_ayam', selectedRoosterClasses.join(','))
+      fd.append('jenis_ayam', selectedRoosterBreeds.join(','))
       fd.append('is_featured', String(isFeatured))
       fd.append('level_event', get('level_event'))
       fd.append('aturan_sangkar', get('aturan_sangkar'))
@@ -113,6 +125,8 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
         setOpen(false)
         setSuccess(false)
         setSelectedBurung([])
+        setSelectedRoosterClasses([])
+        setSelectedRoosterBreeds([])
         setSelectedLevel('')
         setIsFeatured(false)
         formRef.current?.reset()
@@ -275,6 +289,46 @@ export default function AddEventModal({ onEventAdded }: { onEventAdded?: () => v
                   ))}
                 </div>
                 {selectedBurung.length > 0 && <p style={{ fontSize: 12, color: '#16a34a', marginTop: 6 }}>✓ {selectedBurung.length} kelas dipilih</p>}
+              </div>
+
+              {/* Rooster Classes */}
+              <div>
+                <label style={labelStyle}>Kelas Ayam (Berat)</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: 12, background: '#fef2f2', borderRadius: 10, border: '1.5px solid #fecaca' }}>
+                  {ROOSTER_CLASSES.map(c => (
+                    <button key={c} type="button" onClick={() => toggleRoosterClass(c)}
+                      style={{
+                        padding: '5px 12px', borderRadius: 9999, fontSize: 12, fontWeight: 600,
+                        fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s',
+                        border: selectedRoosterClasses.includes(c) ? '1.5px solid #dc2626' : '1.5px solid #fecaca',
+                        background: selectedRoosterClasses.includes(c) ? '#fef2f2' : '#fff',
+                        color: selectedRoosterClasses.includes(c) ? '#dc2626' : '#64748b',
+                      }}>
+                      {c}
+                    </button>
+                  ))}
+                </div>
+                {selectedRoosterClasses.length > 0 && <p style={{ fontSize: 12, color: '#dc2626', marginTop: 6 }}>✓ {selectedRoosterClasses.length} kelas dipilih</p>}
+              </div>
+
+              {/* Rooster Breeds */}
+              <div>
+                <label style={labelStyle}>Jenis Ayam</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: 12, background: '#fef2f2', borderRadius: 10, border: '1.5px solid #fecaca' }}>
+                  {ROOSTER_BREEDS.map(b => (
+                    <button key={b} type="button" onClick={() => toggleRoosterBreed(b)}
+                      style={{
+                        padding: '5px 12px', borderRadius: 9999, fontSize: 12, fontWeight: 600,
+                        fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s',
+                        border: selectedRoosterBreeds.includes(b) ? '1.5px solid #dc2626' : '1.5px solid #fecaca',
+                        background: selectedRoosterBreeds.includes(b) ? '#fef2f2' : '#fff',
+                        color: selectedRoosterBreeds.includes(b) ? '#dc2626' : '#64748b',
+                      }}>
+                      {b}
+                    </button>
+                  ))}
+                </div>
+                {selectedRoosterBreeds.length > 0 && <p style={{ fontSize: 12, color: '#dc2626', marginTop: 6 }}>✓ {selectedRoosterBreeds.length} jenis dipilih</p>}
               </div>
 
               {/* Featured */}

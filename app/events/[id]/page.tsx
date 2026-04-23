@@ -23,6 +23,7 @@ interface Ev {
   kategori_merpati?: string|null; jarak_meter?: number|null; kategori_kelas?: string|null
   kontak?: string|null; biaya_daftar?: number|null; foto_hasil?: string[]|string|null
   daftar_juara?: unknown[]|null
+  kelas_ayam?: string|null; jenis_ayam?: string|null
 }
 interface Juara {
   posisi: number; nama_burung: string; pemilik: string
@@ -135,6 +136,7 @@ export default function DetailPage() {
   const lc = ev.level_event && LC[ev.level_event]
   const mc = ev.kategori_merpati && MC[ev.kategori_merpati]
   const isMerpati = ev.jenis_lomba === 'merpati'
+  const isRooster = ev.jenis_lomba === 'rooster'
   const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent((ev.lokasi||'')+' '+ev.kota)}`
   const shareMsg = encodeURIComponent(`Cek lomba ${ev.nama_event} di ${ev.kota}${ev.tanggal?' tanggal '+fmt(ev.tanggal):''} - gantangfinder.vercel.app/events/${ev.id}`)
 
@@ -148,7 +150,7 @@ export default function DetailPage() {
           </Link>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
             {ev.is_featured && <span style={{background:'linear-gradient(135deg,#f59e0b,#fbbf24)',color:'#fff',fontSize:12,fontWeight:700,padding:'4px 12px',borderRadius:9999}}>⭐ FEATURED</span>}
-            <span style={{background:'var(--bg-primary)',color:'var(--text-primary)', border: '1px solid var(--border-color)', fontSize:12,fontWeight:600,padding:'4px 12px',borderRadius:9999}}>{isMerpati?'🕊️ Merpati/Dara':'🐦 Lomba Kicau'}</span>
+            <span style={{background:'var(--bg-primary)',color:'var(--text-primary)', border: '1px solid var(--border-color)', fontSize:12,fontWeight:600,padding:'4px 12px',borderRadius:9999}}>{isMerpati?'🕊️ Merpati/Dara':isRooster?'🐓 Ayam Jago':'🐦 Lomba Kicau'}</span>
             {lc && <span style={{background:lc.bg,color:lc.color,fontSize:12,fontWeight:700,padding:'4px 12px',borderRadius:9999}}>{ev.level_event}</span>}
             {mc && <span style={{background:mc.bg,color:mc.color,fontSize:12,fontWeight:700,padding:'4px 12px',borderRadius:9999}}>{(ev.kategori_merpati??'').charAt(0).toUpperCase()+(ev.kategori_merpati??'').slice(1)}</span>}
           </div>
@@ -304,6 +306,17 @@ export default function DetailPage() {
               {ev.kategori_merpati && <div style={{textAlign:'center'}}><div style={{fontSize:11,color:'#3b82f6',marginBottom:4}}>Kategori</div><div style={{fontWeight:700,color:'#1e40af'}}>{ev.kategori_merpati.charAt(0).toUpperCase()+ev.kategori_merpati.slice(1)}</div></div>}
               {ev.jarak_meter && <div style={{textAlign:'center'}}><div style={{fontSize:11,color:'#3b82f6',marginBottom:4}}>Jarak</div><div style={{fontWeight:700,color:'#1e40af'}}>{fmtJarak(ev.jarak_meter)}</div></div>}
               {ev.kategori_kelas && <div style={{textAlign:'center'}}><div style={{fontSize:11,color:'#3b82f6',marginBottom:4}}>Kelas</div><div style={{fontWeight:700,color:'#1e40af'}}>{ev.kategori_kelas}</div></div>}
+            </div>
+          </div>
+        )}
+
+        {/* Info Rooster / Ayam Jago */}
+        {isRooster && (ev.kelas_ayam || ev.jenis_ayam) && (
+          <div style={{background:'#fef2f2',borderRadius:16,padding:'16px 20px',border:'1.5px solid #fecaca',marginBottom:16}}>
+            <p style={{fontSize:13,fontWeight:700,color:'#dc2626',marginBottom:10}}>🐓 Info Ayam Jago</p>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              {ev.kelas_ayam && <div style={{textAlign:'center'}}><div style={{fontSize:11,color:'#dc2626',marginBottom:4}}>Kelas</div><div style={{fontWeight:700,color:'#991b1b'}}>{ev.kelas_ayam}</div></div>}
+              {ev.jenis_ayam && <div style={{textAlign:'center'}}><div style={{fontSize:11,color:'#dc2626',marginBottom:4}}>Jenis</div><div style={{fontWeight:700,color:'#991b1b'}}>{ev.jenis_ayam}</div></div>}
             </div>
           </div>
         )}
