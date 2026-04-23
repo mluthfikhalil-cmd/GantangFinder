@@ -84,17 +84,12 @@ export default function Home() {
       if (cached) {
         try { setEvs(JSON.parse(cached)) } catch {}
       }
-      // Fetch fresh
-      if (!SB_URL || !SB_KEY) { 
-        setErr('Konfigurasi Supabase belum lengkap. Cek env variables!')
-        if (!cached) setEvs([])
-        setLoading(false)
-        return 
-      }
+      // Fetch fresh from our API
       try {
-        const r = await fetch(`${SB_URL}/rest/v1/events?select=*&order=is_featured.desc,tanggal.asc`, { headers: H })
+        const r = await fetch('/api/public-events')
         if (!r.ok) { setErr('Gagal mengambil event: ' + r.status); setLoading(false); return }
         const d = await r.json()
+        if (d.error) { setErr(d.error); setLoading(false); return }
         const events = Array.isArray(d) ? d : []
         setEvs(events)
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(events)) } catch {}
