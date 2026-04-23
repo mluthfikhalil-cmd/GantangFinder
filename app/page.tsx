@@ -43,6 +43,8 @@ export default function Home() {
   const [level, setLevel] = useState('')
   const [katMer, setKatMer] = useState('')
   const [kelas, setKelas] = useState('')
+  const [dateStart, setDateStart] = useState('')
+  const [dateEnd, setDateEnd] = useState('')
   const [modal, setModal] = useState(false)
   const [subModal, setSubModal] = useState(false)
   const [toast, setToast] = useState('')
@@ -87,6 +89,14 @@ export default function Home() {
     if (tab==='merpati' && katMer && e.kategori_merpati !== katMer) return false
     if (tab==='merpati' && kelas && e.kategori_kelas !== kelas) return false
     if (tab==='rooster') return e.jenis_lomba === 'rooster' || e.jenis_lomba === undefined
+    // Date range filter
+    if (dateStart || dateEnd) {
+      const evtDate = e.tanggal ? new Date(e.tanggal + 'T00:00:00').getTime() : 0
+      const startTs = dateStart ? new Date(dateStart + 'T00:00:00').getTime() : 0
+      const endTs = dateEnd ? new Date(dateEnd + 'T23:59:59').getTime() : Infinity
+      if (evtDate && startTs && evtDate < startTs) return false
+      if (evtDate && endTs && evtDate > endTs) return false
+    }
     return true
   })
   const now = new Date()
@@ -140,6 +150,11 @@ export default function Home() {
           <div style={{display:'flex',gap:8}}>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Cari nama event..." style={{flex:1,padding:'9px 12px',background:'var(--bg-secondary)', color:'var(--text-primary)', border:'1px solid var(--border-color)',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
             <input value={kota} onChange={e=>setKota(e.target.value)} placeholder="📍 Kota..." style={{flex:1,padding:'9px 12px',background:'var(--bg-secondary)', color:'var(--text-primary)', border:'1px solid var(--border-color)',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
+          </div>
+          <div style={{display:'flex',gap:8}}>
+            <input type="date" value={dateStart} onChange={e=>setDateStart(e.target.value)} style={{flex:1,padding:'9px 12px',background:'var(--bg-secondary)', color:'var(--text-primary)', border:'1px solid var(--border-color)',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
+            <span style={{color:'var(--text-secondary)',alignSelf:'center'}}>→</span>
+            <input type="date" value={dateEnd} onChange={e=>setDateEnd(e.target.value)} style={{flex:1,padding:'9px 12px',background:'var(--bg-secondary)', color:'var(--text-primary)', border:'1px solid var(--border-color)',borderRadius:10,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
           </div>
           <div className="tab-content" style={{display:'flex',gap:6,overflowX:'auto', paddingBottom: 4}}>
             {tab==='kicau' ? ['','Latber','Latpres','Regional','Nasional'].map(l=>btn(level===l,l||'Semua',()=>setLevel(l))) : tab==='merpati' ? (
