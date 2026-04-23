@@ -35,10 +35,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('gf_user')
-    const token = localStorage.getItem('gf_token')
+    const storedUser = localStorage.getItem('gantang_user')
     
-    if (!storedUser || !token) {
+    if (!storedUser) {
       router.push('/login')
       return
     }
@@ -62,7 +61,7 @@ export default function DashboardPage() {
   }, [router])
 
   const handleLogout = () => {
-    localStorage.removeItem('gf_user')
+    localStorage.removeItem('gantang_user')
     localStorage.removeItem('gf_token')
     router.push('/login')
   }

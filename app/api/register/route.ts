@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       headers: H,
       body: JSON.stringify({
         username,
-        email: username + '@demo.com', -- Use username as email for compatibility
+        email: username + '@demo.com',
         password_hash: passwordHash,
         full_name: namaLengkap,
         whatsapp_number: waNumber || null,
