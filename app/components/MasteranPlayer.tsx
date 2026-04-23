@@ -130,8 +130,11 @@ export default function MasteranPlayer({ sound, onPlay, onDownload }: MasteranPl
         onEnded={() => setIsPlaying(false)}
         onError={(e) => {
           console.error('Audio load error:', e)
-          const audio = e.target as HTMLAudioElement
-          console.log('Audio error - URL:', audio.src, 'Error:', audio.error?.message)
+          // Try fallback to Google sounds if Wikimedia fails
+          if (audioRef.current && !audioRef.current.src.includes('fallback')) {
+            audioRef.current.src = 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.mp3'
+            audioRef.current.play().catch(() => {})
+          }
         }}
         style={{ width: '100%', height: '40px', marginBottom: '8px' }}
       />
