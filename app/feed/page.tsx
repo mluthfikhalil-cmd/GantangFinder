@@ -21,7 +21,7 @@ export default function FeedPage() {
 
   // Load User from Local Storage
   useEffect(() => {
-    const stored = localStorage.getItem('gf_user');
+    const stored = localStorage.getItem('gantang_user');
     if (stored) {
       setUser(JSON.parse(stored));
     }

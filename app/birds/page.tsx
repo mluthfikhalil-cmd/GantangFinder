@@ -48,7 +48,7 @@ export default function PetManagementPage() {
   const [formErr, setFormErr] = useState('')
 
   useEffect(() => {
-    const stored = localStorage.getItem('gf_user')
+    const stored = localStorage.getItem('gantang_user')
     if (!stored) { router.push('/login'); return }
     const u = JSON.parse(stored) as User
     setUser(u)
