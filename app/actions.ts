@@ -186,8 +186,8 @@ export async function deleteResultImage(eventId: string, imageUrl: string) {
     const getData = await getRes.json()
     const currentEv = Array.isArray(getData) ? getData[0] : getData
 
-    const oldPhotos = Array.isArray(currentEv?.foto_hasil) ? currentEv.foto_hasil : []
-    const newPhotos = oldPhotos.filter(p => p !== imageUrl)
+    const oldPhotos = Array.isArray(currentEv?.foto_hasil) ? currentEv.foto_hasil as string[] : []
+    const newPhotos = oldPhotos.filter((p: string) => p !== imageUrl)
 
     // 2. Update database
     const updateRes = await fetch(

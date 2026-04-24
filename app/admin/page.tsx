@@ -774,8 +774,8 @@ function ManageJuaraModal({ ev, onClose, onSaved }: { ev: Ev, onClose: () => voi
   const updateKelas = (index: number, val: string) => {
     const newList = [...juaraList]; newList[index].kelas = val; setJuaraList(newList)
   }
-  const updateJuara = (kelasIndex: number, juaraIndex: number, field: string, val: string | number) => {
-    const newList = [...juaraList]; newList[kelasIndex].juara[juaraIndex][field] = val; setJuaraList(newList)
+  const updateJuara = (kelasIndex: number, juaraIndex: number, field: 'posisi' | 'nama_burung' | 'pemilik', val: string | number) => {
+    const newList = [...juaraList]; (newList[kelasIndex].juara[juaraIndex] as unknown as Record<string, string | number>)[field] = val; setJuaraList(newList)
   }
   const removeKelas = (index: number) => {
     const newList = [...juaraList]; newList.splice(index, 1); setJuaraList(newList)

@@ -213,7 +213,7 @@ export default function PetManagementPage() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {activeTab === 'bird' ? (
-              birds.length === 0 ? <p style={{ textAlign: 'center', py: 8 }}>Belum ada burung.</p> :
+              birds.length === 0 ? <p style={{ textAlign: 'center', padding: '8px 0' }}>Belum ada burung.</p> :
               birds.map(b => (
                 <div key={b.id} style={{ background: 'var(--bg-secondary)', borderRadius: 14, padding: 16, border: '1px solid var(--border-color)', display: 'flex', gap: 12, alignItems: 'center' }}>
                   <div style={{ fontSize: 24 }}>🐦</div>
@@ -224,7 +224,7 @@ export default function PetManagementPage() {
                 </div>
               ))
             ) : (
-              roosters.length === 0 ? <p style={{ textAlign: 'center', py: 8 }}>Belum ada ayam jago.</p> :
+              roosters.length === 0 ? <p style={{ textAlign: 'center', padding: '8px 0' }}>Belum ada ayam jago.</p> :
               roosters.map(r => (
                 <Link key={r.id} href={`/roosters/${r.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                   <div style={{ background: 'var(--bg-secondary)', borderRadius: 14, padding: 16, border: '1px solid var(--border-color)', display: 'flex', gap: 12, alignItems: 'center' }}>
